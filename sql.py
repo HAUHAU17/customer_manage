@@ -19,6 +19,7 @@ conn.commit()
 def add_customer(name, phone, email, address):
     cursor.execute("INSERT INTO customers (name, phone, email, address) VALUES (?, ?, ?, ?)", (name, phone, email, address))
     conn.commit()
+    print(f"Customer added: Name='{name}', Phone='{phone}', Email='{email}', Address='{address}'")  # 디버깅 출력
 
 def get_customers(query=""):
     query = f"%{query}%"
@@ -46,6 +47,12 @@ def get_customer_id_by_info(name, phone, email, address):
         return result[0]
     print("No matching customer found.")  # 디버깅 출력
     return None
+
+def show_all_customers():
+    cursor.execute("SELECT * FROM customers")
+    customers = cursor.fetchall()
+    for customer in customers:
+        print(customer)
 
 def close_connection():
     conn.close()

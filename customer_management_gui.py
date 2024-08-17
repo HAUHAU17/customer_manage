@@ -4,7 +4,7 @@ from sql import add_customer, get_customers, delete_customer, update_customer, c
 
 def save_customer():
     name = entry_name.get()
-    phone = entry_phone.get()
+    phone = f"{entry_phone1.get()}-{entry_phone2.get()}-{entry_phone3.get()}"
     email = entry_email.get()
     address = entry_address.get()
     
@@ -12,7 +12,9 @@ def save_customer():
     add_customer(name, phone, email, address)
     messagebox.showinfo("저장 완료", "저장되었습니다.")
     entry_name.delete(0, tk.END)
-    entry_phone.delete(0, tk.END)
+    entry_phone1.delete(0, tk.END)
+    entry_phone2.delete(0, tk.END)
+    entry_phone3.delete(0, tk.END)
     entry_email.delete(0, tk.END)
     entry_address.delete(0, tk.END)
     load_customers()
@@ -21,51 +23,27 @@ def load_customers(query=""):
     customers = get_customers(query)
     treeview_customers.delete(*treeview_customers.get_children())
     for customer in customers:
-        # Ensure the order is (name, phone, email, address)
-        treeview_customers.insert('', tk.END, values=(customer[1], customer[2], customer[3], customer[4]))
-
-
+        # Ensure the order is (id, name, phone, email, address)
+        treeview_customers.insert('', tk.END, values=(customer[0], customer[1], customer[2], customer[3], customer[4]))
 
 def delete_selected_customer():
     selected_item = treeview_customers.selection()
     if selected_item:
-        customer_values = treeview_customers.item(selected_item)['values']
-        name, phone, email, address = customer_values
-        customer_id = get_customer_id_by_info(name, phone, email, address)
-        if customer_id:
-            if messagebox.askyesno("삭제 확인", "선택한 고객을 삭제하시겠습니까?"):
-                delete_customer(customer_id)
-                load_customers()
-        else:
-            messagebox.showerror("오류", "고객 정보를 찾을 수 없습니다.")
-
+        customer_id = treeview_customers.item(selected_item)['values'][0]
+        delete_customer(customer_id)
+        load_customers()
 
 def show_customer_info(event):
     selected_item = treeview_customers.selection()
     if selected_item:
         customer_values = treeview_customers.item(selected_item)['values']
-        if len(customer_values) >= 4:
-            # Extract values in the correct order
-            name, phone, email, address = customer_values
-            # Retrieve the customer ID from the selection (needs correct indexing)
-            customer_id = get_customer_id_by_info(name, phone, email, address)
-            if customer_id:
-                create_customer_tab(customer_id, name, phone, email, address)
-
-def show_customer_info(event):
-    selected_item = treeview_customers.selection()
-    if selected_item:
-        customer_values = treeview_customers.item(selected_item)['values']
-        if len(customer_values) >= 4:
-            name, phone, email, address = customer_values
-            customer_id = get_customer_id_by_info(name, phone, email, address)
-            
-            if customer_id:
-                create_customer_tab(customer_id, name, phone, email, address)
-            else:
-                messagebox.showerror("오류", "고객 정보를 찾을 수 없습니다.")
-        else:
-            messagebox.showerror("오류", "올바른 고객 데이터를 선택하세요.")
+        if len(customer_values) >= 5:
+            customer_id = customer_values[0]  # ID를 올바르게 추출합니다.
+            name = customer_values[1]
+            phone = customer_values[2]
+            email = customer_values[3]
+            address = customer_values[4]  # 올바른 인덱스 사용
+            create_customer_tab(customer_id, name, phone, email, address)
 
 def search_customers(event=None):
     search_term = entry_search.get()
@@ -73,79 +51,97 @@ def search_customers(event=None):
 
 def create_customer_tab(customer_id, name, phone, email, address):
     tab_name = name
-    
-    # 이미 존재하는 탭인지 확인하고, 있다면 해당 탭으로 이동
+
     if tab_name in tab_names:
         notebook.select(tab_names[tab_name])
         return
 
-    # 새로운 탭 생성
     new_tab = ttk.Frame(notebook)
-    notebook.add(new_tab, text=f"{tab_name} [x]")
-    
-    # Tab에 이름을 저장해 관리
-    tab_names[tab_name] = new_tab
 
-    # Tab 내에 고객 정보를 표시
-    tk.Label(new_tab, text="이름:").grid(row=0, column=0, padx=10, pady=5)
+    # Add the tab to the notebook
+    notebook.add(new_tab, text=f"{tab_name} [x]", sticky="nsew")
+
+    # Add X button to the tab frame
+    close_button = tk.Button(new_tab, text="X", command=lambda: close_tab(tab_name, new_tab))
+    close_button.grid(row=0, column=1, padx=5, pady=5, sticky='ne')
+
+    # Customer info display and editing
+    tk.Label(new_tab, text="이름:").grid(row=1, column=0, padx=10, pady=5)
+    tk.Label(new_tab, text="전화번호:").grid(row=2, column=0, padx=10, pady=5)
+    
+    phone_validate = root.register(lambda input: input.isdigit() or input == '')  # 숫자만 허용하는 validation 함수
+
+    entry_phone1_edit = tk.Entry(new_tab, validate="key", validatecommand=(phone_validate, '%P'), width=5)
+    entry_phone1_edit.grid(row=2, column=1, padx=10, pady=5)
+    entry_phone1_edit.insert(0, phone.split('-')[0])
+
+    tk.Label(new_tab, text="-").grid(row=2, column=2, padx=0, pady=5)
+
+    entry_phone2_edit = tk.Entry(new_tab, validate="key", validatecommand=(phone_validate, '%P'), width=4)
+    entry_phone2_edit.grid(row=2, column=3, padx=0, pady=5)
+    entry_phone2_edit.insert(0, phone.split('-')[1])
+
+    tk.Label(new_tab, text="-").grid(row=2, column=4, padx=0, pady=5)
+
+    entry_phone3_edit = tk.Entry(new_tab, validate="key", validatecommand=(phone_validate, '%P'), width=4)
+    entry_phone3_edit.grid(row=2, column=5, padx=0, pady=5)
+    entry_phone3_edit.insert(0, phone.split('-')[2])
+    
+    tk.Label(new_tab, text="이메일:").grid(row=3, column=0, padx=10, pady=5)
+    tk.Label(new_tab, text="주소:").grid(row=4, column=0, padx=10, pady=5)
+
     entry_name_edit = tk.Entry(new_tab)
-    entry_name_edit.grid(row=0, column=1, padx=10, pady=5)
+    entry_name_edit.grid(row=1, column=1)
     entry_name_edit.insert(0, name)
 
-    tk.Label(new_tab, text="전화번호:").grid(row=1, column=0, padx=10, pady=5)
-    entry_phone_edit = tk.Entry(new_tab)
-    entry_phone_edit.grid(row=1, column=1, padx=10, pady=5)
-    entry_phone_edit.insert(0, phone)
-
-    tk.Label(new_tab, text="이메일:").grid(row=2, column=0, padx=10, pady=5)
     entry_email_edit = tk.Entry(new_tab)
-    entry_email_edit.grid(row=2, column=1, padx=10, pady=5)
+    entry_email_edit.grid(row=3, column=1)
     entry_email_edit.insert(0, email)
 
-    tk.Label(new_tab, text="주소:").grid(row=3, column=0, padx=10, pady=5)
     entry_address_edit = tk.Entry(new_tab)
-    entry_address_edit.grid(row=3, column=1, padx=10, pady=5)
+    entry_address_edit.grid(row=4, column=1)
     entry_address_edit.insert(0, address)
 
-    # 정보 저장 버튼
     def save_edits():
         updated_name = entry_name_edit.get()
-        updated_phone = entry_phone_edit.get()
+        updated_phone = f"{entry_phone1_edit.get()}-{entry_phone2_edit.get()}-{entry_phone3_edit.get()}"
         updated_email = entry_email_edit.get()
         updated_address = entry_address_edit.get()
 
-        # 고객 정보 업데이트
+        # Update customer information using ID
         update_customer(customer_id, updated_name, updated_phone, updated_email, updated_address)
-        messagebox.showinfo("저장 완료", "정보가 저장되었습니다.")
-        load_customers()
-
-        # 탭 이름 업데이트
-        tab_names.pop(name, None)
-        tab_names[updated_name] = new_tab
-        notebook.tab(new_tab, text=f"{updated_name} [x]")
+        messagebox.showinfo("저장 완료", "저장되었습니다.")
+        load_customers()  # Refresh the customer list
+        tab_names.pop(name, None)  # Remove old tab reference
+        tab_names[updated_name] = new_tab  # Add updated tab reference
+        notebook.tab(new_tab, text=f"{updated_name} [x]")  # Update tab name
+        notebook.select(tab_all_customers) 
 
     save_button_edit = tk.Button(new_tab, text="저장", command=save_edits)
-    save_button_edit.grid(row=4, column=1, pady=10)
+    save_button_edit.grid(row=5, column=1, pady=10)
 
-    # 정보 삭제 버튼
     def delete_customer_info():
         if messagebox.askyesno("삭제 확인", "정말로 삭제하시겠습니까?"):
             delete_customer(customer_id)
             load_customers()
             close_tab(tab_name, new_tab)
+            notebook.select(tab_all_customers)  # Switch to the 전체 고객 tab
 
     delete_button_edit = tk.Button(new_tab, text="삭제", command=delete_customer_info)
-    delete_button_edit.grid(row=5, column=1, pady=10)
+    delete_button_edit.grid(row=6, column=1, pady=10)
 
-    notebook.select(new_tab)  # 새로운 탭으로 포커스 이동
+    notebook.select(new_tab)  # Switch to the new tab
 
-
+    # Add tab to the tab_names dictionary
+    tab_names[tab_name] = new_tab
+    print(f"Tab names updated: {tab_names}")  # Debug print
 
 def close_tab(tab_name, tab_frame):
-    tab = tab_names.pop(tab_name, None)
-    if tab:
-        notebook.forget(tab_frame)
-        
+    if tab_name in tab_names:
+        notebook.forget(tab_names[tab_name])  # Remove the tab from notebook
+        tab_names.pop(tab_name, None)  # Remove tab from the dictionary
+        tab_frame.destroy()  # Explicitly destroy the tab frame
+
 def show_all_customers():
     load_customers()
 
@@ -180,12 +176,14 @@ view_all_button = tk.Button(frame_search, text="전체보기", command=show_all_
 view_all_button.pack(side="left")
 
 # Treeview for displaying customers
-treeview_customers = ttk.Treeview(tab_all_customers, columns=("Name", "Phone", "Email", "Address"), show='headings')
+treeview_customers = ttk.Treeview(tab_all_customers, columns=("ID", "Name", "Phone", "Email", "Address"), show='headings')
+treeview_customers.heading("ID", text="ID")
 treeview_customers.heading("Name", text="이름")
 treeview_customers.heading("Phone", text="전화번호")
 treeview_customers.heading("Email", text="이메일")
 treeview_customers.heading("Address", text="주소")
 
+treeview_customers.column("ID", width=50, anchor="w")
 treeview_customers.column("Name", width=150, anchor="w")
 treeview_customers.column("Phone", width=150, anchor="w")
 treeview_customers.column("Email", width=150, anchor="w")
@@ -205,8 +203,16 @@ entry_name = tk.Entry(tab_add_customer)
 entry_name.grid(row=0, column=1, padx=10, pady=5)
 
 tk.Label(tab_add_customer, text="전화번호:").grid(row=1, column=0, padx=10, pady=5)
-entry_phone = tk.Entry(tab_add_customer)
-entry_phone.grid(row=1, column=1, padx=10, pady=5)
+phone_validate = root.register(lambda input: input.isdigit() or input == '')  # 숫자만 허용하는 validation 함수
+entry_phone1 = tk.Entry(tab_add_customer, validate="key", validatecommand=(phone_validate, '%P'), width=5)
+entry_phone1.grid(row=1, column=1, padx=10, pady=5)
+entry_phone1.insert(0, "010")
+tk.Label(tab_add_customer, text="-").grid(row=1, column=2, padx=0, pady=5)
+entry_phone2 = tk.Entry(tab_add_customer, validate="key", validatecommand=(phone_validate, '%P'), width=4)
+entry_phone2.grid(row=1, column=3, padx=0, pady=5)
+tk.Label(tab_add_customer, text="-").grid(row=1, column=4, padx=0, pady=5)
+entry_phone3 = tk.Entry(tab_add_customer, validate="key", validatecommand=(phone_validate, '%P'), width=4)
+entry_phone3.grid(row=1, column=5, padx=0, pady=5)
 
 tk.Label(tab_add_customer, text="이메일:").grid(row=2, column=0, padx=10, pady=5)
 entry_email = tk.Entry(tab_add_customer)
