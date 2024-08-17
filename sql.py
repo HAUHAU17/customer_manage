@@ -16,10 +16,17 @@ cursor.execute('''CREATE TABLE IF NOT EXISTS customers (
 
 conn.commit()
 
-def add_customer(name, phone, email, address):
-    cursor.execute("INSERT INTO customers (name, phone, email, address) VALUES (?, ?, ?, ?)", (name, phone, email, address))
+def add_customer(name, birth_year, birth_month, birth_day, age, phone, email, address, gender,
+                 session_start_date, session_end_date, presenting_problem, session_count, special_notes):
+    # 고객 추가 로직 구현
+    # 예를 들어, 데이터베이스에 추가하는 코드
+    cursor.execute("""
+        INSERT INTO customers (name, birth_year, birth_month, birth_day, age, phone, email, address, gender,
+                               session_start_date, session_end_date, presenting_problem, session_count, special_notes)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (name, birth_year, birth_month, birth_day, age, phone, email, address, gender,
+          session_start_date, session_end_date, presenting_problem, session_count, special_notes))
     conn.commit()
-    print(f"Customer added: Name='{name}', Phone='{phone}', Email='{email}', Address='{address}'")  # 디버깅 출력
 
 def get_customers(query=""):
     query = f"%{query}%"
@@ -35,8 +42,21 @@ def update_customer(customer_id, name, phone, email, address):
     conn.commit()
 
 def get_customer_by_id(customer_id):
-    cursor.execute("SELECT name, phone, email, address FROM customers WHERE id=?", (customer_id,))
-    return cursor.fetchone()
+    query = """SELECT name, phone, email, address, gender, session_start_date, 
+                      session_end_date, presenting_problem, session_count, special_notes
+               FROM customers WHERE id = ?"""
+    try:
+        cursor.execute(query, (customer_id,))
+        result = cursor.fetchone()
+        if result:
+            return result  # (name, phone, email, address, gender, session_start_date, session_end_date, presenting_problem, session_count, special_notes)
+        else:
+            print(f"No customer found with ID: {customer_id}")  # 디버깅 출력
+            return None
+    except Exception as e:
+        print(f"Error retrieving customer info: {e}")  # 오류 출력
+        return None
+
 
 def get_customer_id_by_info(name, phone, email, address):
     print(f"Searching for: Name='{name}', Phone='{phone}', Email='{email}', Address='{address}'")  # 디버깅 출력
