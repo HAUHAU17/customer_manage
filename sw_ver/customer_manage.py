@@ -50,7 +50,7 @@ def create_field_entries(window):
     for header in headers:
         if header in ["회기 수", "나이"]:
             entry = tk.Entry(window, width=60, validate="key", validatecommand=(window.register(validate_integer), "%P"))
-        elif header == "전화번호":
+        elif header in ["전화번호"]:
             entry = tk.Entry(window, width=60, validate="key", validatecommand=(window.register(validate_phone), "%P"))
         elif header in ["상담시작일", "상담종료일"]:
             entry = DateEntry(window, width=60, background='darkblue', foreground='white', borderwidth=2, date_pattern='yyyy-mm-dd')
@@ -149,8 +149,6 @@ def open_create_user_window():
         save_user_data(values)
         create_window.destroy()
 
-    #create_window.bind("<Return>", lambda event: save_new_user())
-
     button_save = tk.Button(create_window, text="저장", command=save_new_user)
     button_save.grid(row=len(headers), column=1, padx=10, pady=10)
 
@@ -178,9 +176,6 @@ def open_update_window(user_id):
         }
         save_user_data(values, user_id=user_id)
         update_window.destroy()
-
-    # Bind the Enter key to the save_updates function
-    #update_window.bind("<Return>", lambda event: save_updates())
 
     button_save = tk.Button(update_window, text="저장", command=save_updates)
     button_save.grid(row=len(headers), column=1, padx=10, pady=10)
@@ -253,9 +248,6 @@ option_menu.grid(row=0, column=1, padx=10, pady=10, sticky='w')
 # 검색 입력 필드
 entry_search = tk.Entry(root, width=30)
 entry_search.grid(row=0, column=2, padx=10, pady=10, sticky='w')
-
-# Bind the Enter key to the search_users function
-#entry_search.bind("<Return>", search_users)
 
 # 검색 버튼
 button_search = tk.Button(root, text="검색", command=search_users)
