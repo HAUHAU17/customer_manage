@@ -20,10 +20,10 @@ def read_users(search_query=None):
         query = "SELECT * FROM users WHERE"
         params = []
         for field, value in search_query.items():
-            if field == "name":
+            if field == "이름":
                 query += " name LIKE ? AND"
                 params.append(f"%{value}%")
-            elif field == "age":
+            elif field == "나이":
                 query += " age LIKE ? AND"
                 params.append(f"%{value}%")
         query = query.rstrip(" AND")  # 끝의 'AND' 제거
