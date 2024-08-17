@@ -40,6 +40,7 @@ def build_search_query(search_query):
     params = []
 
     field_map = {
+        "ID": "user_id",
         "이름": "name",
         "나이": "age",
         "메일": "email",

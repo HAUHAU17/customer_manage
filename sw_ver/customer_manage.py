@@ -11,12 +11,13 @@ root.geometry("1400x800")  # 메인 창 초기 크기 설정
 
 # Treeview 설정
 headers = [
-    "이름", "나이", "메일", "성별", "전화번호", "주소", "상담시작일", "상담종료일", "호소문제", "회기 수", "특이사항"
+    "ID", "이름", "나이", "메일", "성별", "전화번호", "주소", "상담시작일", "상담종료일", "호소문제", "회기 수", "특이사항"
 ]
 treeview_users = ttk.Treeview(root, columns=headers, show='headings')
 
 # 기본 열 너비 설정
 column_widths = {
+    "ID": 50,
     "이름": 120,
     "나이": 50,
     "메일": 150,
@@ -48,6 +49,8 @@ def create_field_entries(window):
     """필드 및 라벨 설정을 함수화하여 중복 제거."""
     labels_and_fields = {}
     for header in headers:
+        if header in ["ID"]:
+            continue
         if header in ["회기 수", "나이"]:
             entry = tk.Entry(window, width=60, validate="key", validatecommand=(window.register(validate_integer), "%P"))
         elif header in ["전화번호"]:
@@ -71,8 +74,11 @@ def grid_field_entries(labels_and_fields, window):
 
 def populate_fields(entries, user_data):
     """기존 데이터를 필드에 채워 넣음."""
-    for label, entry in entries.items():
-        index = headers.index(label) + 1  # ID가 첫 번째 필드이므로 +1
+    # 딕셔너리 항목을 리스트로 변환
+    items = list(entries.items())
+    
+    for label, entry in items[0:]:
+        index = headers.index(label) + 0  # ID가 첫 번째 필드이므로 +1
         if label in ["상담시작일", "상담종료일"]:
             date_str = user_data[index]
             if date_str:
@@ -93,7 +99,7 @@ def save_user_data(values, user_id=None):
         consultation_start = values.get("상담시작일", "").strftime('%Y-%m-%d') if isinstance(values.get("상담시작일"), datetime) else values.get("상담시작일", "")
         consultation_end = values.get("상담종료일", "").strftime('%Y-%m-%d') if isinstance(values.get("상담종료일"), datetime) else values.get("상담종료일", "")
         
-        if values["이름"] and values["나이"].isdigit():
+        if values["이름"] and values["나이"].isdigit() and values.get("메일", "") and values.get("성별", "") and values.get("전화번호", "") and values.get("주소", "") and consultation_start and consultation_end and values.get("호소문제", "") and values.get("회기 수", 0).isdigit() and values.get("특이사항", ""):
             if user_id:
                 sql.update_user(
                     user_id,
@@ -201,7 +207,7 @@ def read_users_gui(search_query=None):
                 else:
                     # datetime 객체인 경우
                     formatted_row[i] = value.strftime('%Y-%m-%d') if value else ""
-        treeview_users.insert("", tk.END, iid=str(row[0]), values=formatted_row[1:])
+        treeview_users.insert("", tk.END, iid=str(row[0]), values=formatted_row[0:])
 
 def on_user_select(event=None):
     selected_item = treeview_users.selection()
