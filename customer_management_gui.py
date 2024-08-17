@@ -45,6 +45,7 @@ def save_customer():
     messagebox.showinfo("저장 완료", "고객 정보가 저장되었습니다.")
     clear_entries()
     load_customers()
+    notebook.select(tab_all_customers) 
 
 
 def clear_entries():
@@ -68,9 +69,13 @@ def load_customers(query=""):
     customers = get_customers(query)
     treeview_customers.delete(*treeview_customers.get_children())
     for customer in customers:
-        treeview_customers.insert('', tk.END, values=(customer[0], customer[1], customer[2], customer[3],
-                                                      customer[4], customer[5], customer[6], customer[7],
-                                                      customer[8], customer[9], customer[10], customer[11]))
+        # Combine birth year, month, and day into a single string for display
+        birthdate = f"{customer[2]}-{customer[3]:02d}-{customer[4]:02d}"
+        treeview_customers.insert('', tk.END, values=(customer[0], customer[1], birthdate, customer[5],
+                                                      customer[6], customer[7], customer[8], customer[9],
+                                                      customer[10], customer[11], customer[12], customer[13]))
+
+
 
 def delete_selected_customer():
     selected_item = treeview_customers.selection()
@@ -83,18 +88,21 @@ def show_customer_info(event):
     selected_item = treeview_customers.selection()
     if selected_item:
         customer_values = treeview_customers.item(selected_item)['values']
-        if len(customer_values) >= 5:
+        if len(customer_values) >= 1:  # ID를 가져오는 경우, 최소 1개 값이 있어야 합니다.
             customer_id = customer_values[0]  # ID를 올바르게 추출합니다.
 
             # 모든 정보 가져오기
             all_info = get_customer_by_id(customer_id)
             if all_info:
-                name, phone, email, address, gender, session_start_date, session_end_date, presenting_problem, session_count, special_notes = all_info
+                # 반환값의 수에 맞게 변수에 저장합니다.
+                (id, name, birth_year, birth_month, birth_day, age, phone, email, address, gender,
+                 session_start_date, session_end_date, presenting_problem, session_count, special_notes) = all_info
 
                 # 탭 생성
                 create_customer_tab(customer_id, name, phone, email, address, gender,
                                     session_start_date, session_end_date, presenting_problem,
-                                    session_count, special_notes)
+                                    session_count, special_notes, birth_year, birth_month, birth_day, age)
+
 
 
 
@@ -105,7 +113,7 @@ def search_customers(event=None):
 tab_names = {}
 def create_customer_tab(customer_id, name, phone, email, address, gender,
                         session_start_date, session_end_date, presenting_problem,
-                        session_count, special_notes):
+                        session_count, special_notes, birth_year, birth_month, birth_day, age):
     tab_name = name
 
     # Check if the tab already exists
@@ -128,11 +136,13 @@ def create_customer_tab(customer_id, name, phone, email, address, gender,
     tk.Label(new_tab, text="이메일:").grid(row=3, column=0, padx=10, pady=5, sticky="w")
     tk.Label(new_tab, text="주소:").grid(row=4, column=0, padx=10, pady=5, sticky="w")
     tk.Label(new_tab, text="성별:").grid(row=5, column=0, padx=10, pady=5, sticky="w")
-    tk.Label(new_tab, text="상담 시작일:").grid(row=6, column=0, padx=10, pady=5, sticky="w")
-    tk.Label(new_tab, text="상담 종료일:").grid(row=7, column=0, padx=10, pady=5, sticky="w")
-    tk.Label(new_tab, text="호소 문제:").grid(row=8, column=0, padx=10, pady=5, sticky="nw")
-    tk.Label(new_tab, text="회기수:").grid(row=9, column=0, padx=10, pady=5, sticky="w")
-    tk.Label(new_tab, text="특이사항:").grid(row=10, column=0, padx=10, pady=5, sticky="nw")
+    tk.Label(new_tab, text="생년월일:").grid(row=6, column=0, padx=10, pady=5, sticky="w")
+    tk.Label(new_tab, text="나이:").grid(row=6, column=3, padx=10, pady=5, sticky="w")  # 나이 라벨 추가
+    tk.Label(new_tab, text="상담 시작일:").grid(row=7, column=0, padx=10, pady=5, sticky="w")
+    tk.Label(new_tab, text="상담 종료일:").grid(row=8, column=0, padx=10, pady=5, sticky="w")
+    tk.Label(new_tab, text="호소 문제:").grid(row=9, column=0, padx=10, pady=5, sticky="nw")
+    tk.Label(new_tab, text="회기수:").grid(row=10, column=0, padx=10, pady=5, sticky="w")
+    tk.Label(new_tab, text="특이사항:").grid(row=11, column=0, padx=10, pady=5, sticky="nw")
 
     phone_parts = phone.split('-') if phone else ['', '', '']
 
@@ -143,13 +153,13 @@ def create_customer_tab(customer_id, name, phone, email, address, gender,
 
     tk.Label(new_tab, text="-").grid(row=2, column=2, padx=0, pady=5)
 
-    entry_phone2_edit = tk.Entry(new_tab, width=4)
+    entry_phone2_edit = tk.Entry(new_tab, width=5)
     entry_phone2_edit.grid(row=2, column=3, padx=0, pady=5)
     entry_phone2_edit.insert(0, phone_parts[1])
 
     tk.Label(new_tab, text="-").grid(row=2, column=4, padx=0, pady=5)
 
-    entry_phone3_edit = tk.Entry(new_tab, width=4)
+    entry_phone3_edit = tk.Entry(new_tab, width=5)
     entry_phone3_edit.grid(row=2, column=5, padx=0, pady=5)
     entry_phone3_edit.insert(0, phone_parts[2])
 
@@ -167,37 +177,54 @@ def create_customer_tab(customer_id, name, phone, email, address, gender,
     entry_address_edit.insert(0, address)
 
     # Gender (radio buttons)
-    gender_var = tk.StringVar(value='남')
+    gender_var = tk.StringVar(value=gender)
     gender_male_rb = tk.Radiobutton(new_tab, text="남", variable=gender_var, value='남')
     gender_male_rb.grid(row=5, column=1, padx=10, pady=5, sticky="w")
     gender_female_rb = tk.Radiobutton(new_tab, text="여", variable=gender_var, value='여')
     gender_female_rb.grid(row=5, column=2, padx=10, pady=5, sticky="w")
 
+    # Birthdate and age
+    entry_birth_year = tk.Entry(new_tab, width=5)
+    entry_birth_year.grid(row=6, column=1, padx=10, pady=5)
+    entry_birth_year.insert(0, birth_year)
+
+    entry_birth_month = tk.Entry(new_tab, width=5)
+    entry_birth_month.grid(row=6, column=2, padx=10, pady=5)
+    entry_birth_month.insert(0, birth_month)
+
+    entry_birth_day = tk.Entry(new_tab, width=5)
+    entry_birth_day.grid(row=6, column=3, padx=10, pady=5)
+    entry_birth_day.insert(0, birth_day)
+
+    entry_age_edit = tk.Entry(new_tab)
+    entry_age_edit.grid(row=6, column=4, padx=10, pady=5)
+    entry_age_edit.insert(0, age)
+
     # Dates
     entry_session_start = DateEntry(new_tab, date_pattern='yyyy-mm-dd')
-    entry_session_start.grid(row=6, column=1, padx=10, pady=5, sticky="ew")
+    entry_session_start.grid(row=7, column=1, padx=10, pady=5, sticky="ew")
     entry_session_start.set_date(datetime.strptime(session_start_date, '%Y-%m-%d') if session_start_date else datetime.today())
 
     entry_session_end = DateEntry(new_tab, date_pattern='yyyy-mm-dd')
-    entry_session_end.grid(row=7, column=1, padx=10, pady=5, sticky="ew")
+    entry_session_end.grid(row=8, column=1, padx=10, pady=5, sticky="ew")
     entry_session_end.set_date(datetime.strptime(session_end_date, '%Y-%m-%d') if session_end_date else datetime.today())
 
     # Presenting problem and special notes
     entry_presenting_problem = tk.Text(new_tab, height=4, width=40)
-    entry_presenting_problem.grid(row=8, column=1, padx=10, pady=5, sticky="ew", columnspan=4)
+    entry_presenting_problem.grid(row=9, column=1, padx=10, pady=5, sticky="ew", columnspan=4)
     entry_presenting_problem.insert("1.0", presenting_problem)
 
     entry_session_count = tk.Entry(new_tab)
-    entry_session_count.grid(row=9, column=1, padx=10, pady=5, sticky="ew")
+    entry_session_count.grid(row=10, column=1, padx=10, pady=5, sticky="ew")
     entry_session_count.insert(0, session_count)
 
     entry_special_notes = tk.Text(new_tab, height=4, width=40)
-    entry_special_notes.grid(row=10, column=1, padx=10, pady=5, sticky="ew", columnspan=4)
+    entry_special_notes.grid(row=11, column=1, padx=10, pady=5, sticky="ew", columnspan=4)
     entry_special_notes.insert("1.0", special_notes)
 
     def save_edits():
         updated_name = entry_name_edit.get()
-        updated_phone = f"{entry_phone1_edit.get()}-{entry_phone2_edit.get()}-{entry_phone3_edit.get()}"
+        updated_phone = f"{entry_phone1_edit.get()}-{entry_phone2_edit.get()}-{entry_phone3_edit.get()}" 
         updated_email = entry_email_edit.get()
         updated_address = entry_address_edit.get()
         updated_gender = gender_var.get()
@@ -206,36 +233,43 @@ def create_customer_tab(customer_id, name, phone, email, address, gender,
         updated_presenting_problem = entry_presenting_problem.get("1.0", tk.END).strip()
         updated_session_count = entry_session_count.get()
         updated_special_notes = entry_special_notes.get("1.0", tk.END).strip()
+        
+        # 생년월일을 연도, 월, 일로 조합
+        updated_birth_year = entry_birth_year.get()
+        updated_birth_month = entry_birth_month.get()
+        updated_birth_day = entry_birth_day.get()
+        updated_birthdate = f"{updated_birth_year}-{int(updated_birth_month):02d}-{int(updated_birth_day):02d}"
+        updated_age = entry_age_edit.get()
 
         # Update customer information using ID
         update_customer(customer_id, updated_name, updated_phone, updated_email, updated_address,
-                         updated_gender, updated_session_start, updated_session_end,
-                         updated_presenting_problem, updated_session_count, updated_special_notes)
+                        updated_gender, updated_session_start, updated_session_end,
+                        updated_presenting_problem, updated_session_count, updated_special_notes,
+                        updated_birthdate, updated_age)
         messagebox.showinfo("저장 완료", "저장되었습니다.")
         load_customers()  # Refresh the customer list
         tab_names.pop(name, None)  # Remove old tab reference
         tab_names[updated_name] = new_tab  # Add updated tab reference
         notebook.tab(new_tab, text=f"{updated_name} [x]")  # Update tab name
+
+
         notebook.select(tab_all_customers) 
 
     save_button_edit = tk.Button(new_tab, text="저장", command=save_edits)
-    save_button_edit.grid(row=11, column=1, pady=10)
+    save_button_edit.grid(row=10, column=1, pady=10)
 
     def delete_customer_info():
         if messagebox.askyesno("삭제 확인", "정말로 삭제하시겠습니까?"):
             delete_customer(customer_id)
             load_customers()
             close_tab(tab_name, new_tab)
-            notebook.select(tab_all_customers)  # Switch to the 전체 고객 tab
+            notebook.select(tab_all_customers) 
 
     delete_button_edit = tk.Button(new_tab, text="삭제", command=delete_customer_info)
-    delete_button_edit.grid(row=12, column=1, pady=10)
+    delete_button_edit.grid(row=10, column=2, pady=10)
 
-    notebook.select(new_tab)  # Switch to the new tab
-
-    # Add tab to the tab_names dictionary
+    # Update the tab_names dictionary
     tab_names[tab_name] = new_tab
-    print(f"Tab names updated: {tab_names}")  # Debug print
 
 
 def close_tab(tab_name, tab_frame):
@@ -243,6 +277,7 @@ def close_tab(tab_name, tab_frame):
         notebook.forget(tab_names[tab_name])  # Remove the tab from notebook
         tab_names.pop(tab_name, None)  # Remove tab from the dictionary
         tab_frame.destroy()  # Explicitly destroy the tab frame
+    notebook.select(tab_all_customers)
 
 def show_all_customers():
     load_customers()
@@ -289,7 +324,6 @@ treeview_customers.heading("Address", text="주소")
 treeview_customers.heading("Gender", text="성별")
 treeview_customers.heading("Session Start", text="상담 시작일")
 treeview_customers.heading("Session End", text="상담 종료일")
-treeview_customers.heading("Presenting Problem", text="호소 문제")
 treeview_customers.heading("Session Count", text="회기수")
 treeview_customers.heading("Special Notes", text="특이사항")
 
