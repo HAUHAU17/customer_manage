@@ -5,35 +5,73 @@ conn = sqlite3.connect('users.db')
 c = conn.cursor()
 
 def create_table():
-    c.execute('''CREATE TABLE IF NOT EXISTS users
-                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
-                  name TEXT NOT NULL,
-                  age INTEGER NOT NULL)''')
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            age INTEGER NOT NULL,
+            email TEXT,
+            gender TEXT,
+            phone TEXT,
+            address TEXT,
+            consultation_start DATE,
+            consultation_end DATE,
+            issue TEXT,
+            sessions INTEGER,
+            notes TEXT
+        )
+    ''')
     conn.commit()
 
-def create_user(name, age):
-    c.execute('INSERT INTO users (name, age) VALUES (?, ?)', (name, age))
+def create_user(name, age, email, gender, phone, address, consultation_start, consultation_end, issue, sessions, notes):
+    c.execute('''
+        INSERT INTO users (
+            name, age, email, gender, phone, address, consultation_start, consultation_end, issue, sessions, notes
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (name, age, email, gender, phone, address, consultation_start, consultation_end, issue, sessions, notes))
     conn.commit()
+
+def build_search_query(search_query):
+    if not search_query:
+        return "SELECT * FROM users", []
+
+    query = "SELECT * FROM users WHERE"
+    conditions = []
+    params = []
+
+    field_map = {
+        "이름": "name",
+        "나이": "age",
+        "메일": "email",
+        "성별": "gender",
+        "전화번호": "phone",
+        "주소": "address",
+        "상담시작일": "consultation_start",
+        "상담종료일": "consultation_end",
+        "호소문제": "issue",
+        "회기 수": "sessions",
+        "특이사항": "notes"
+    }
+
+    for field, value in search_query.items():
+        if field in field_map:
+            conditions.append(f"{field_map[field]} LIKE ?")
+            params.append(f"%{value}%")
+
+    query += " AND ".join(conditions)
+    return query, params
 
 def read_users(search_query=None):
-    if search_query:
-        query = "SELECT * FROM users WHERE"
-        params = []
-        for field, value in search_query.items():
-            if field == "이름":
-                query += " name LIKE ? AND"
-                params.append(f"%{value}%")
-            elif field == "나이":
-                query += " age LIKE ? AND"
-                params.append(f"%{value}%")
-        query = query.rstrip(" AND")  # 끝의 'AND' 제거
-        c.execute(query, params)
-    else:
-        c.execute('SELECT * FROM users')
+    query, params = build_search_query(search_query)
+    c.execute(query, params)
     return c.fetchall()
 
-def update_user(user_id, name, age):
-    c.execute('UPDATE users SET name = ?, age = ? WHERE id = ?', (name, age, user_id))
+def update_user(user_id, name, age, email, gender, phone, address, consultation_start, consultation_end, issue, sessions, notes):
+    c.execute('''
+        UPDATE users
+        SET name = ?, age = ?, email = ?, gender = ?, phone = ?, address = ?, consultation_start = ?, consultation_end = ?, issue = ?, sessions = ?, notes = ?
+        WHERE id = ?
+    ''', (name, age, email, gender, phone, address, consultation_start, consultation_end, issue, sessions, notes, user_id))
     conn.commit()
 
 def delete_user(user_id):
