@@ -54,6 +54,8 @@ def create_field_entries(window):
             entry = tk.Entry(window, width=60, validate="key", validatecommand=(window.register(validate_phone), "%P"))
         elif header in ["상담시작일", "상담종료일"]:
             entry = DateEntry(window, width=60, background='darkblue', foreground='white', borderwidth=2, date_pattern='yyyy-mm-dd')
+        elif header in ["특이사항"]:
+            entry = tk.Text(window, height=10, width=60)
         else:
             entry = tk.Entry(window, width=60)
         labels_and_fields[header] = entry
@@ -76,7 +78,13 @@ def populate_fields(entries, user_data):
             if date_str:
                 entry.set_date(datetime.strptime(date_str, '%Y-%m-%d'))  # DateEntry에 날짜 설정
         else:
-            entry.insert(0, user_data[index])
+            # tk.Text와 tk.Entry를 구분하여 처리
+            if isinstance(entry, tk.Text):
+                entry.delete("1.0", tk.END)  # 기존 내용을 삭제
+                entry.insert("1.0", user_data[index])  # 텍스트 삽입
+            else:
+                entry.delete(0, tk.END)  # 기존 내용을 삭제
+                entry.insert(0, user_data[index])  # 텍스트 삽입
 
 def save_user_data(values, user_id=None):
     """사용자 데이터를 저장 또는 업데이트."""
@@ -132,13 +140,18 @@ def open_create_user_window():
     grid_field_entries(entries, create_window)
 
     def save_new_user():
-        values = {label: entry.get() if not isinstance(entry, DateEntry) else entry.get_date() for label, entry in entries.items()}
+        values = {
+            label: (entry.get() if isinstance(entry, tk.Entry) else 
+            entry.get("1.0", tk.END).strip() if isinstance(entry, tk.Text) else 
+            entry.get_date() if isinstance(entry, DateEntry) else None)
+            for label, entry in entries.items()
+        }
         save_user_data(values)
         create_window.destroy()
 
-    create_window.bind("<Return>", lambda event: save_new_user())
+    #create_window.bind("<Return>", lambda event: save_new_user())
 
-    button_save = tk.Button(create_window, text="Save", command=save_new_user)
+    button_save = tk.Button(create_window, text="저장", command=save_new_user)
     button_save.grid(row=len(headers), column=1, padx=10, pady=10)
 
 def open_update_window(user_id):
@@ -157,14 +170,19 @@ def open_update_window(user_id):
     entry_name.focus_set()  # 새 창 열릴 때 Name 입력 필드에 포커스
 
     def save_updates():
-        values = {field: entry.get() if not isinstance(entry, DateEntry) else entry.get_date() for field, entry in entries.items()}
+        values = {
+            label: (entry.get() if isinstance(entry, tk.Entry) else 
+            entry.get("1.0", tk.END).strip() if isinstance(entry, tk.Text) else 
+            entry.get_date() if isinstance(entry, DateEntry) else None)
+            for label, entry in entries.items()
+        }
         save_user_data(values, user_id=user_id)
         update_window.destroy()
 
     # Bind the Enter key to the save_updates function
-    update_window.bind("<Return>", lambda event: save_updates())
+    #update_window.bind("<Return>", lambda event: save_updates())
 
-    button_save = tk.Button(update_window, text="Save", command=save_updates)
+    button_save = tk.Button(update_window, text="저장", command=save_updates)
     button_save.grid(row=len(headers), column=1, padx=10, pady=10)
 
 def read_users_gui(search_query=None):
@@ -237,7 +255,7 @@ entry_search = tk.Entry(root, width=30)
 entry_search.grid(row=0, column=2, padx=10, pady=10, sticky='w')
 
 # Bind the Enter key to the search_users function
-entry_search.bind("<Return>", search_users)
+#entry_search.bind("<Return>", search_users)
 
 # 검색 버튼
 button_search = tk.Button(root, text="검색", command=search_users)
