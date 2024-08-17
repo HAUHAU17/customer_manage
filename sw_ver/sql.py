@@ -35,7 +35,7 @@ def build_search_query(search_query):
     if not search_query:
         return "SELECT * FROM users", []
 
-    query = "SELECT * FROM users WHERE"
+    query = "SELECT * FROM users WHERE "
     conditions = []
     params = []
 
@@ -58,7 +58,11 @@ def build_search_query(search_query):
             conditions.append(f"{field_map[field]} LIKE ?")
             params.append(f"%{value}%")
 
-    query += " AND ".join(conditions)
+    if conditions:
+        query += " AND ".join(conditions)
+    else:
+        query = "SELECT * FROM users"  # 조건이 없을 경우 전체 조회
+
     return query, params
 
 def read_users(search_query=None):
