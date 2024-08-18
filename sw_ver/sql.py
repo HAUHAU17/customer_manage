@@ -9,6 +9,10 @@ def create_table():
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
+            birth TEXT,
+            year TEXT,
+            month TEXT,
+            day TEXT,
             age INTEGER NOT NULL,
             email TEXT,
             gender TEXT,
@@ -23,12 +27,12 @@ def create_table():
     ''')
     conn.commit()
 
-def create_user(name, age, email, gender, phone, address, consultation_start, consultation_end, issue, sessions, notes):
+def create_user(name, birth, year, month, day, age, email, gender, phone, address, consultation_start, consultation_end, issue, sessions, notes):
     c.execute('''
         INSERT INTO users (
-            name, age, email, gender, phone, address, consultation_start, consultation_end, issue, sessions, notes
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (name, age, email, gender, phone, address, consultation_start, consultation_end, issue, sessions, notes))
+            name, birth, year, month, day, age, email, gender, phone, address, consultation_start, consultation_end, issue, sessions, notes
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (name, birth, year, month, day, age, email, gender, phone, address, consultation_start, consultation_end, issue, sessions, notes))
     conn.commit()
 
 def build_search_query(search_query):
@@ -42,6 +46,10 @@ def build_search_query(search_query):
     field_map = {
         "ID": "user_id",
         "이름": "name",
+        "생년월일": "birth",
+        "연도": "year",
+        "월": "month",
+        "일": "day", 
         "나이": "age",
         "메일": "email",
         "성별": "gender",
@@ -71,12 +79,12 @@ def read_users(search_query=None):
     c.execute(query, params)
     return c.fetchall()
 
-def update_user(user_id, name, age, email, gender, phone, address, consultation_start, consultation_end, issue, sessions, notes):
+def update_user(user_id, name, birth, year, month, day, age, email, gender, phone, address, consultation_start, consultation_end, issue, sessions, notes):
     c.execute('''
         UPDATE users
-        SET name = ?, age = ?, email = ?, gender = ?, phone = ?, address = ?, consultation_start = ?, consultation_end = ?, issue = ?, sessions = ?, notes = ?
+        SET name = ?, birth = ?, year = ?, month = ?, day = ?, age = ?, email = ?, gender = ?, phone = ?, address = ?, consultation_start = ?, consultation_end = ?, issue = ?, sessions = ?, notes = ?
         WHERE id = ?
-    ''', (name, age, email, gender, phone, address, consultation_start, consultation_end, issue, sessions, notes, user_id))
+    ''', (name, birth, year, month, day, age, email, gender, phone, address, consultation_start, consultation_end, issue, sessions, notes, user_id))
     conn.commit()
 
 def delete_user(user_id):
