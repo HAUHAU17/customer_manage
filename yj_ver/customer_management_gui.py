@@ -4,12 +4,12 @@ from datetime import datetime
 from tkcalendar import DateEntry 
 
 # Database interaction functions (imported from another module)
-from sql import add_customer, get_customers, delete_customer, update_customer, close_connection, get_customer_by_id, validate_birthdate
+from sql import add_customer, get_customers, delete_customer, update_customer, close_connection, get_customer_by_id, validate_birthdate, load_customers
 from customer_tab import create_customer_tab 
 
 root = tk.Tk()
 root.title("고객 관리 프로그램")
-root.geometry("800x600")  # Set default window size
+root.geometry("1000x600")  # Set default window size
 notebook = ttk.Notebook(root)
 notebook.pack(expand=1, fill='both')
 
@@ -41,7 +41,7 @@ def save_customer():
     birth_year = entry_birth_year.get().strip() or ''
     birth_month = entry_birth_month.get().strip() or ''
     birth_day = entry_birth_day.get().strip() or ''
-    age = entry_age.get().strip() or ''
+    age = entry_age.get().strip() or '' 
     phone_part1 = entry_phone1.get().strip()
     phone_part2 = entry_phone2.get().strip()
     phone_part3 = entry_phone3.get().strip()
@@ -64,7 +64,7 @@ def save_customer():
 
     messagebox.showinfo("저장 완료", "고객 정보가 저장되었습니다.")
     clear_entries()
-    load_customers()
+    load_customers(treeview_customers, get_customers, query="")
     notebook.select(tab_all_customers)
 
 
@@ -86,32 +86,6 @@ def clear_entries():
     entry_special_notes.delete("1.0", tk.END)
 
 
-def load_customers(query=""):
-    customers = get_customers(query)
-    treeview_customers.delete(*treeview_customers.get_children())
-    
-    for customer in customers:
-        # Extract values from customer tuple, handle missing values
-        id = customer[0]
-        name = customer[1]
-        birth_year = customer[2] if customer[2] else "0000"
-        birth_month = f"{int(customer[3]):02d}" if customer[3] else "00"
-        birth_day = f"{int(customer[4]):02d}" if customer[4] else "00"
-        age = customer[5] if customer[5] else ""
-        phone = customer[6] if customer[6] else ""
-        email = customer[7] if customer[7] else ""
-        address = customer[8] if customer[8] else ""
-        gender = customer[9] if customer[9] else ""
-        session_start_date = customer[10] if customer[10] else ""
-        session_end_date = customer[11] if customer[11] else ""
-        
-        # Combine birth year, month, and day into a single string for display
-        birthdate = f"{birth_year}-{birth_month}-{birth_day}"
-        
-        # Insert the customer information into the Treeview
-        treeview_customers.insert('', tk.END, values=(id, name, birthdate, age, phone, email, address, gender,
-                                                      session_start_date, session_end_date))
-
 
 
 def delete_selected_customer():
@@ -119,7 +93,7 @@ def delete_selected_customer():
     if selected_item:
         customer_id = treeview_customers.item(selected_item)['values'][0]
         delete_customer(customer_id)
-        load_customers()
+        load_customers(treeview_customers, get_customers, query="")
 
 def show_customer_info(event):
     selected_item = treeview_customers.selection()
@@ -138,22 +112,15 @@ def show_customer_info(event):
                 # 탭 생성
                 create_customer_tab(notebook, tab_names, customer_id, name, phone, email, address, gender,
                                     session_start_date, session_end_date, presenting_problem,
-                                    session_count, special_notes, birth_year, birth_month, birth_day, age)
+                                    session_count, special_notes, birth_year, birth_month, birth_day, age, treeview_customers)
                 
-
-
 
 def search_customers():
     search_term = entry_search.get()
     load_customers(search_term)
 
-
-
-
 def show_all_customers():
-    load_customers()
-
-
+    load_customers(treeview_customers, get_customers, query="")
 
 # Create and place the X button at the window's top-right corner
 def close_app():
@@ -162,8 +129,6 @@ def close_app():
 
 root.protocol("WM_DELETE_WINDOW", close_app)
 
-notebook = ttk.Notebook(root)
-notebook.pack(expand=1, fill="both")
 
 # 첫 번째 탭: 전체 고객
 tab_all_customers = ttk.Frame(notebook)
@@ -182,7 +147,7 @@ view_all_button = tk.Button(frame_search, text="전체보기", command=show_all_
 view_all_button.pack(side="left")
 
 # Treeview for displaying customers
-treeview_customers = ttk.Treeview(tab_all_customers, columns=("ID", "Name", "Birthdate", "Age", "Phone", "Email", "Address", "Gender", "Session Start", "Session End", "Presenting Problem", "Session Count", "Special Notes"), show='headings')
+treeview_customers = ttk.Treeview(tab_all_customers, columns=("ID", "Name", "Birthdate", "Age", "Phone", "Email", "Address", "Gender", "Session Start", "Session End", "Session Count"), show='headings')
 treeview_customers.heading("ID", text="ID")
 treeview_customers.heading("Name", text="이름")
 treeview_customers.heading("Birthdate", text="생년월일")
@@ -194,7 +159,6 @@ treeview_customers.heading("Gender", text="성별")
 treeview_customers.heading("Session Start", text="상담 시작일")
 treeview_customers.heading("Session End", text="상담 종료일")
 treeview_customers.heading("Session Count", text="회기수")
-treeview_customers.heading("Special Notes", text="특이사항")
 
 treeview_customers.column("ID", width=50, anchor="w")
 treeview_customers.column("Name", width=150, anchor="w")
@@ -206,14 +170,12 @@ treeview_customers.column("Address", width=200, anchor="w")
 treeview_customers.column("Gender", width=80, anchor="w")
 treeview_customers.column("Session Start", width=100, anchor="w")
 treeview_customers.column("Session End", width=100, anchor="w")
-treeview_customers.column("Presenting Problem", width=200, anchor="w")
 treeview_customers.column("Session Count", width=80, anchor="w")
-treeview_customers.column("Special Notes", width=200, anchor="w")
 
 treeview_customers.pack(padx=10, pady=10, fill="both", expand=True)
 treeview_customers.bind("<Double-1>", show_customer_info)
 
-load_customers()
+load_customers(treeview_customers, get_customers, query="")
 
 # 두 번째 탭: 고객 추가
 tab_add_customer = ttk.Frame(notebook)
@@ -239,8 +201,9 @@ entry_name = tk.Entry(tab_add_customer)
 entry_name.grid(row=0, column=1, padx=10, pady=5, sticky="ew")
 
 # 성별 입력
-tk.Label(tab_add_customer, text="성별:").grid(row=0, column=2, padx=10, pady=5, sticky="w")
+tk.Label(tab_add_customer, text="성별:").grid(row=0, column=2, padx=5, pady=5, sticky="w")
 gender_var = tk.StringVar(value='남')
+# 성별 버튼 배치
 gender_male_rb = tk.Radiobutton(tab_add_customer, text="남", variable=gender_var, value='남')
 gender_female_rb = tk.Radiobutton(tab_add_customer, text="여", variable=gender_var, value='여')
 gender_male_rb.grid(row=0, column=3, padx=10, pady=5, sticky="w")
@@ -248,17 +211,21 @@ gender_female_rb.grid(row=0, column=4, padx=10, pady=5, sticky="w")
 
 # 생년월일 입력
 tk.Label(tab_add_customer, text="생년월일:").grid(row=1, column=0, padx=10, pady=5, sticky="w")
-tk.Label(tab_add_customer, text="년:").grid(row=1, column=2, padx=2, pady=5, sticky="w")
+
 entry_birth_year = tk.Entry(tab_add_customer, width=5)
+
+frame_birthdate = tk.Frame(tab_add_customer)
+frame_birthdate.grid(row=1, column=2, columnspan=8, padx=10, pady=5, sticky="w")
+
+tk.Label(frame_birthdate, text="년").grid(row=1, column=2, padx=1, pady=5, sticky="w")
 entry_birth_year.grid(row=1, column=1, padx=10, pady=5, sticky="w")
-
-tk.Label(tab_add_customer, text="월:").grid(row=1, column=4, padx=2, pady=5, sticky="w")
-entry_birth_month = tk.Entry(tab_add_customer, width=3)
+tk.Label(frame_birthdate, text="월").grid(row=1, column=4, padx=1, pady=5, sticky="w")
+entry_birth_month = tk.Entry(frame_birthdate, width=3)
 entry_birth_month.grid(row=1, column=3, padx=10, pady=5, sticky="w")
-
-tk.Label(tab_add_customer, text="일:").grid(row=1, column=6, padx=2, pady=5, sticky="w")
-entry_birth_day = tk.Entry(tab_add_customer, width=3)
+tk.Label(frame_birthdate, text="일").grid(row=1, column=6, padx=1, pady=5, sticky="w")
+entry_birth_day = tk.Entry(frame_birthdate, width=3)
 entry_birth_day.grid(row=1, column=5, padx=10, pady=5, sticky="w")
+
 
 # 나이 표시 (읽기 전용)
 tk.Label(tab_add_customer, text="나이:").grid(row=1, column=7, padx=10, pady=5, sticky="w")
@@ -300,10 +267,20 @@ tk.Label(tab_add_customer, text="상담 종결일:").grid(row=5, column=2, padx=
 entry_session_end = DateEntry(tab_add_customer, date_pattern='yyyy-mm-dd')
 entry_session_end.grid(row=5, column=3, padx=10, pady=5, sticky="ew")
 
-# 호소 문제 입력
+# 호소문제 입력
 tk.Label(tab_add_customer, text="호소 문제:").grid(row=6, column=0, padx=10, pady=5, sticky="nw")
-entry_presenting_problem = tk.Text(tab_add_customer, height=4, width=40)
-entry_presenting_problem.grid(row=6, column=1, padx=10, pady=5, sticky="ew", columnspan=4)
+# Frame to contain Text widget and Scrollbar
+frame_presenting_problem = tk.Frame(tab_add_customer)
+frame_presenting_problem.grid(row=6, column=1, padx=10, pady=5, sticky="ew", columnspan=3)
+# Text widget for presenting problem
+entry_presenting_problem = tk.Text(frame_presenting_problem, height=4, width=40)
+entry_presenting_problem.pack(side="left", fill="both", expand=True)
+# Scrollbar for the Text widget
+scrollbar_presenting_problem = tk.Scrollbar(frame_presenting_problem, command=entry_presenting_problem.yview)
+scrollbar_presenting_problem.pack(side="right", fill="y")
+# Link scrollbar to Text widget
+entry_presenting_problem.config(yscrollcommand=scrollbar_presenting_problem.set)
+
 
 # 회기수 입력
 tk.Label(tab_add_customer, text="회기수:").grid(row=7, column=0, padx=10, pady=5, sticky="w")
@@ -312,8 +289,17 @@ entry_session_count.grid(row=7, column=1, padx=10, pady=5, sticky="ew")
 
 # 특이사항 입력
 tk.Label(tab_add_customer, text="특이사항:").grid(row=8, column=0, padx=10, pady=5, sticky="nw")
-entry_special_notes = tk.Text(tab_add_customer, height=4, width=40)
-entry_special_notes.grid(row=8, column=1, padx=10, pady=5, sticky="ew", columnspan=4)
+# Frame to contain Text widget and Scrollbar
+frame_special_notes = tk.Frame(tab_add_customer)
+frame_special_notes.grid(row=8, column=1, padx=10, pady=5, sticky="ew", columnspan=10)
+# Text widget for special notes
+entry_special_notes = tk.Text(frame_special_notes, height=4, width=40)
+entry_special_notes.pack(side="left", fill="both", expand=True)
+# Scrollbar for the Text widget
+scrollbar_special_notes = tk.Scrollbar(frame_special_notes, command=entry_special_notes.yview)
+scrollbar_special_notes.pack(side="right", fill="y")
+# Link scrollbar to Text widget
+entry_special_notes.config(yscrollcommand=scrollbar_special_notes.set)
 
 # 저장 버튼
 save_button = tk.Button(tab_add_customer, text="저장", command=save_customer)
@@ -325,6 +311,6 @@ tab_add_customer.grid_columnconfigure(3, weight=1)
 tab_add_customer.grid_columnconfigure(4, weight=1)
 tab_add_customer.grid_columnconfigure(5, weight=1)
 
-load_customers()
+load_customers(treeview_customers, get_customers, query="")
 
 root.mainloop()

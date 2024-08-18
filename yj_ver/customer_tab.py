@@ -4,35 +4,52 @@ import tkinter as tk
 from tkinter import messagebox, ttk
 from tkcalendar import DateEntry
 from datetime import datetime
-from sql import update_customer, delete_customer, validate_birthdate
+from sql import update_customer, delete_customer, validate_birthdate, load_customers, get_customers
 
 def create_customer_tab(notebook, tab_names, customer_id, name, phone, email, address, gender,
                         session_start_date, session_end_date, presenting_problem,
-                        session_count, special_notes, birth_year, birth_month, birth_day, age):
+                        session_count, special_notes, birth_year, birth_month, birth_day, age, treeview_customers):
+    
     
     def close_tab(tab_name, tab):
         # 탭을 닫고, 탭 이름을 tab_names에서 제거
-        tab.destroy()
         if tab_name in tab_names:
-            del tab_names[tab_name]
+            tab_names.pop(tab_name)  # 탭 이름 제거
+        tab.destroy()  # 탭 제거
+        
         # 전체 고객 탭으로 돌아가기
-        notebook.select(tab_names['전체 고객'])
+        if '전체 고객' in tab_names:
+            notebook.select(tab_names['전체 고객'])
+        else:
+            # 전체 고객 탭이 없으면 첫 번째 탭으로 돌아가기
+            if notebook.tabs():
+                notebook.select(notebook.tabs()[0])
+
+        
 
     tab_name = name
 
-    # Check if the tab already exists
     if tab_name in tab_names:
-        notebook.select(tab_names[tab_name])  # 이미 열려 있는 경우 해당 탭으로 이동
-        return
+        # Validate if the tab still exists or was closed improperly
+        try:
+            notebook.select(tab_names[tab_name])
+            return
+        except tk.TclError:
+            # If the tab doesn't exist anymore, remove the invalid reference
+            del tab_names[tab_name]
 
     new_tab = ttk.Frame(notebook)
-
+    
     # Add the tab to the notebook
     notebook.add(new_tab, text=f"{tab_name} [x]", sticky="nsew")
+
+    # Store the reference to the new tab
+    tab_names[tab_name] = new_tab
 
     # Add X button to the tab frame
     close_button = tk.Button(new_tab, text="X", command=lambda: close_tab(tab_name, new_tab))
     close_button.grid(row=0, column=1, padx=5, pady=5, sticky='ne')
+
 
     # Create labels and entries for each piece of information
     tk.Label(new_tab, text="이름:").grid(row=1, column=0, padx=10, pady=5, sticky="w")
@@ -142,7 +159,7 @@ def create_customer_tab(notebook, tab_names, customer_id, name, phone, email, ad
     entry_session_end.set_date(datetime.strptime(session_end_date, '%Y-%m-%d') if session_end_date else datetime.today())
 
     # Presenting problem and special notes
-    entry_presenting_problem = tk.Text(new_tab, height=4, width=40)
+    entry_presenting_problem = tk.Text(new_tab, height=2, width=40)
     entry_presenting_problem.grid(row=9, column=1, padx=10, pady=5, sticky="ew", columnspan=4)
     entry_presenting_problem.insert("1.0", presenting_problem if presenting_problem else "")
 
@@ -154,14 +171,11 @@ def create_customer_tab(notebook, tab_names, customer_id, name, phone, email, ad
     entry_special_notes.grid(row=11, column=1, padx=10, pady=5, sticky="ew", columnspan=4)
     entry_special_notes.insert("1.0", special_notes if special_notes else "")
 
-    def save_edits():
-
-        if not name:
+    def save_edits(tab_name):
+        if not entry_name_edit.get().strip():
             messagebox.showwarning("필수 항목 누락", "이름을 입력해주세요.")
             return
-        
 
-    
         updated_name = entry_name_edit.get().strip()
         updated_phone = f"{entry_phone1_edit.get()}-{entry_phone2_edit.get()}-{entry_phone3_edit.get()}"
         updated_email = entry_email_edit.get().strip()
@@ -173,7 +187,6 @@ def create_customer_tab(notebook, tab_names, customer_id, name, phone, email, ad
         updated_session_count = entry_session_count.get().strip()
         updated_special_notes = entry_special_notes.get("1.0", tk.END).strip()
 
-        # 생년월일을 연도, 월, 일로 조합
         updated_birth_year = entry_birth_year.get().strip()
         updated_birth_month = entry_birth_month.get().strip()
         updated_birth_day = entry_birth_day.get().strip()
@@ -191,14 +204,21 @@ def create_customer_tab(notebook, tab_names, customer_id, name, phone, email, ad
                         updated_session_count, updated_special_notes)
 
         # Show a message to confirm the changes
+        load_customers(treeview_customers, get_customers, query="")
         messagebox.showinfo("저장 완료", "저장되었습니다!")
-        tab_names[tab_name] = new_tab
 
-
+        # Update the tab name in the notebook and tab_names
+        if tab_name in tab_names:
+            tab = tab_names[tab_name]
+            # Update the tab text
+            notebook.tab(tab, text=updated_name)
+            # Update the tab_names dictionary
+            tab_names.pop(tab_name)
+            tab_names[updated_name] = tab
 
 
     # Save button
-    save_button = tk.Button(new_tab, text="저장", command=save_edits)
+    save_button = tk.Button(new_tab, text="저장", command=lambda: save_edits(tab_name))
     save_button.grid(row=12, column=0, padx=10, pady=10, sticky="ew", columnspan=2)
 
     # Mark the tab as active
