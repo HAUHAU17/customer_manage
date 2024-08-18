@@ -13,7 +13,10 @@ root.geometry("1400x800")  # 메인 창 초기 크기 설정
 headers = [
     "ID", "이름", "나이", "메일", "성별", "전화번호", "주소", "상담시작일", "상담종료일", "호소문제", "회기 수", "특이사항"
 ]
-treeview_users = ttk.Treeview(root, columns=headers, show='headings')
+viewonly_headers = [
+    "ID", "이름", "나이", "메일", "성별", "전화번호", "주소", "상담시작일", "상담종료일", "회기 수"
+]
+treeview_users = ttk.Treeview(root, columns=viewonly_headers, show='headings')
 
 # 기본 열 너비 설정
 column_widths = {
@@ -26,12 +29,10 @@ column_widths = {
     "주소": 200,
     "상담시작일": 100,
     "상담종료일": 100,
-    "호소문제": 150,
-    "회기 수": 80,
-    "특이사항": 200
+    "회기 수": 80
 }
 
-for header in headers:
+for header in viewonly_headers:
     treeview_users.heading(header, text=header)
     treeview_users.column(header, width=column_widths.get(header, 100), anchor=tk.W)
 
@@ -207,7 +208,12 @@ def read_users_gui(search_query=None):
                 else:
                     # datetime 객체인 경우
                     formatted_row[i] = value.strftime('%Y-%m-%d') if value else ""
-        treeview_users.insert("", tk.END, iid=str(row[0]), values=formatted_row[0:])
+        
+        # headers 리스트에서 viewonly_headers에 해당하는 항목의 인덱스하여 selected_column에 저장
+        indices = [headers.index(header) for header in viewonly_headers]
+        selected_column = [formatted_row[i] for i in indices]
+        
+        treeview_users.insert("", tk.END, iid=str(row[0]), values=selected_column)
 
 def on_user_select(event=None):
     selected_item = treeview_users.selection()
