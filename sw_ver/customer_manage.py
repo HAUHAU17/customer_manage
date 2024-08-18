@@ -55,20 +55,35 @@ def create_field_entries(window):
     """필드 및 라벨 설정을 함수화하여 중복 제거."""
     labels_and_fields = {}
     
+    def calculate_age(birth_date):
+        """생년월일을 입력받아 나이를 계산합니다."""
+        today = datetime.today()
+        age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month,     birth_date.day))
+        return age
+    
     # Helper function to update date entry widget
     def update_date_entry():
         year = year_var.get()
         month = month_var.get()
         day = day_var.get()
+        
+        birth_date = datetime(int(year), int(month), int(day))
+        age = calculate_age(birth_date)
+        age_entry = labels_and_fields.get("나이")
+        if age_entry:
+            age_entry.config(state=tk.NORMAL)  # Enable editing
+            age_entry.delete(0, tk.END)
+            age_entry.insert(0, str(age))
+            age_entry.config(state=tk.DISABLED)  # Disable editing
     
     for header in headers:
         if header in ["ID"]:
             continue
-        if header in ["회기 수", "나이"]:
+        if header in ["회기 수"]:
             entry = tk.Entry(window, width=10, validate="key", validatecommand=(window.register(validate_integer), "%P"))
         elif header in ["전화번호"]:
             entry = tk.Entry(window, width=20, validate="key", validatecommand=(window.register(validate_phone), "%P"))
-        elif header in ["생년월일", "연도", "월", "일"]:
+        elif header in ["생년월일", "연도", "월", "일", "나이"]:
             # Create lists for year, month, and day dropdowns
             if header in ["연도"]:
                 years = [str(year) for year in range(1900, datetime.now().year + 1)]
@@ -91,9 +106,11 @@ def create_field_entries(window):
                 # Day dropdown
                 entry = ttk.Combobox(window, textvariable=day_var, values=days, width=8)
                 entry.bind("<<ComboboxSelected>>", lambda e: update_date_entry())
-            else:
+            elif header in ["생년월일"]:
                 # Entry widget for date
                 entry = tk.Entry(window, width=10)
+            else:
+                entry = tk.Entry(window, width=10, validate="key", validatecommand=(window.register(validate_integer), "%P"))
         elif header in ["상담시작일", "상담종료일"]:
             entry = DateEntry(window, width=10, background='darkblue', foreground='white', borderwidth=2, date_pattern='yyyy-mm-dd')
         elif header in ["특이사항"]:
@@ -152,6 +169,9 @@ def populate_fields(entries, user_data):
             else:
                 entry.delete(0, tk.END)  # 기존 내용을 삭제
                 entry.insert(0, user_data[index])  # 텍스트 삽입
+                
+                if label in ["나이"]:
+                    entry.config(state=tk.DISABLED) #나이 필드 비활성화
 
 def save_user_data(values, user_id=None):
     """사용자 데이터를 저장 또는 업데이트."""
@@ -370,6 +390,9 @@ button_update.grid(row=0, column=1, padx=10)
 
 button_delete = tk.Button(button_frame, text="삭제", command=delete_user_gui)
 button_delete.grid(row=0, column=2, padx=10)
+
+# Bind the Enter key to the search_users function
+entry_search.bind("<Return>", search_users)
 
 # Grid 레이아웃의 행과 열 비율 조정
 root.grid_rowconfigure(2, weight=1)
