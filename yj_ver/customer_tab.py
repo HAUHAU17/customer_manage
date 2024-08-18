@@ -4,7 +4,7 @@ import tkinter as tk
 from tkinter import messagebox, ttk
 from tkcalendar import DateEntry
 from datetime import datetime
-from sql import update_customer, delete_customer  # 필요한 경우
+from sql import update_customer, delete_customer, validate_birthdate
 
 def create_customer_tab(notebook, tab_names, customer_id, name, phone, email, address, gender,
                         session_start_date, session_end_date, presenting_problem,
@@ -105,6 +105,33 @@ def create_customer_tab(notebook, tab_names, customer_id, name, phone, email, ad
     entry_age_edit.insert(0, age)
     entry_age_edit.config(state='disabled')  # 나이 필드 비활성화
 
+    # 나이 계산 함수
+    def update_age(event=None):
+        try:
+            # 사용자가 입력한 생년월일을 가져옴
+            birth_year = int(entry_birth_year.get().strip())
+            birth_month = int(entry_birth_month.get().strip())
+            birth_day = int(entry_birth_day.get().strip())
+
+            # 현재 날짜와 비교하여 나이 계산
+            birth_date = datetime(birth_year, birth_month, birth_day)
+            today = datetime.today()
+            age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
+
+            # 계산된 나이 업데이트
+            entry_age_edit.config(state='normal')
+            entry_age_edit.delete(0, tk.END)
+            entry_age_edit.insert(0, age)
+            entry_age_edit.config(state='disabled')
+        except ValueError:
+            # 생년월일이 완전하지 않을 경우 예외 처리
+            pass
+
+    # 생년월일 입력 시 나이 업데이트를 위한 이벤트 바인딩
+    entry_birth_year.bind("<KeyRelease>", update_age)
+    entry_birth_month.bind("<KeyRelease>", update_age)
+    entry_birth_day.bind("<KeyRelease>", update_age)
+
     # Dates
     entry_session_start = DateEntry(new_tab, date_pattern='yyyy-mm-dd')
     entry_session_start.grid(row=7, column=1, padx=10, pady=5, sticky="ew")
@@ -128,6 +155,13 @@ def create_customer_tab(notebook, tab_names, customer_id, name, phone, email, ad
     entry_special_notes.insert("1.0", special_notes if special_notes else "")
 
     def save_edits():
+
+        if not name:
+            messagebox.showwarning("필수 항목 누락", "이름을 입력해주세요.")
+            return
+        
+
+    
         updated_name = entry_name_edit.get().strip()
         updated_phone = f"{entry_phone1_edit.get()}-{entry_phone2_edit.get()}-{entry_phone3_edit.get()}"
         updated_email = entry_email_edit.get().strip()
@@ -144,16 +178,11 @@ def create_customer_tab(notebook, tab_names, customer_id, name, phone, email, ad
         updated_birth_month = entry_birth_month.get().strip()
         updated_birth_day = entry_birth_day.get().strip()
 
-        # Calculate age
-        birth_date = datetime(int(updated_birth_year), int(updated_birth_month), int(updated_birth_day))
-        today = datetime.today()
-        updated_age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
+        if not validate_birthdate(updated_birth_year, updated_birth_month, updated_birth_day):
+            messagebox.showwarning("잘못된 입력", "올바른 생년월일을 입력하십시오.")
+            return
 
-        # Disable editing on the age field
-        entry_age_edit.config(state='normal')
-        entry_age_edit.delete(0, tk.END)
-        entry_age_edit.insert(0, updated_age)
-        entry_age_edit.config(state='disabled')
+        updated_age = entry_age_edit.get().strip()
 
         # Update customer information using ID
         update_customer(customer_id, updated_name, updated_phone, updated_email, updated_address,
@@ -164,6 +193,8 @@ def create_customer_tab(notebook, tab_names, customer_id, name, phone, email, ad
         # Show a message to confirm the changes
         messagebox.showinfo("저장 완료", "저장되었습니다!")
         tab_names[tab_name] = new_tab
+
+
 
 
     # Save button

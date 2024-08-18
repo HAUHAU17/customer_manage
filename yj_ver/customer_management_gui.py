@@ -4,7 +4,7 @@ from datetime import datetime
 from tkcalendar import DateEntry 
 
 # Database interaction functions (imported from another module)
-from sql import add_customer, get_customers, delete_customer, update_customer, close_connection, get_customer_by_id
+from sql import add_customer, get_customers, delete_customer, update_customer, close_connection, get_customer_by_id, validate_birthdate
 from customer_tab import create_customer_tab 
 
 root = tk.Tk()
@@ -52,6 +52,11 @@ def save_customer():
     session_start_date = entry_session_start.get_date().strftime('%Y-%m-%d') if entry_session_start.get_date() else ''
     session_end_date = entry_session_end.get_date().strftime('%Y-%m-%d') if entry_session_end.get_date() else ''
     session_count = entry_session_count.get().strip() or ''
+    
+    if birth_year and birth_month and birth_day:
+        if not validate_birthdate(birth_year, birth_month, birth_day):
+            messagebox.showwarning("잘못된 입력", "올바른 생년월일을 입력하십시오.")
+            return
 
     # 고객 추가 함수 호출
     add_customer(name, birth_year, birth_month, birth_day, age, phone, email, address, gender,
@@ -134,6 +139,7 @@ def show_customer_info(event):
                 create_customer_tab(notebook, tab_names, customer_id, name, phone, email, address, gender,
                                     session_start_date, session_end_date, presenting_problem,
                                     session_count, special_notes, birth_year, birth_month, birth_day, age)
+                
 
 
 
