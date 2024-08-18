@@ -23,6 +23,7 @@ def open_customer_tab(customer_id, name, phone, email, address, gender,
                         session_count, special_notes, birth_year, birth_month, birth_day, age)
 
 
+
 def calculate_age(year, month, day):
     birthdate = datetime(year, month, day)
     today = datetime.today()
@@ -130,25 +131,18 @@ def show_customer_info(event):
                  session_start_date, session_end_date, presenting_problem, session_count, special_notes) = all_info
 
                 # 탭 생성
-                create_customer_tab(customer_id, name, phone, email, address, gender,
+                create_customer_tab(notebook, tab_names, customer_id, name, phone, email, address, gender,
                                     session_start_date, session_end_date, presenting_problem,
                                     session_count, special_notes, birth_year, birth_month, birth_day, age)
 
 
 
-
-def search_customers(event=None):
+def search_customers():
     search_term = entry_search.get()
     load_customers(search_term)
 
-tab_names = {}
 
-def close_tab(tab_name, tab_frame):
-    if tab_name in tab_names:
-        notebook.forget(tab_names[tab_name])  # Remove the tab from notebook
-        tab_names.pop(tab_name, None)  # Remove tab from the dictionary
-        tab_frame.destroy()  # Explicitly destroy the tab frame
-    notebook.select(tab_all_customers)
+
 
 def show_all_customers():
     load_customers()

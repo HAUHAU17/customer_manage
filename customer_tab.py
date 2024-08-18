@@ -9,11 +9,20 @@ from sql import update_customer, delete_customer  # 필요한 경우
 def create_customer_tab(notebook, tab_names, customer_id, name, phone, email, address, gender,
                         session_start_date, session_end_date, presenting_problem,
                         session_count, special_notes, birth_year, birth_month, birth_day, age):
+    
+    def close_tab(tab_name, tab):
+        # 탭을 닫고, 탭 이름을 tab_names에서 제거
+        tab.destroy()
+        if tab_name in tab_names:
+            del tab_names[tab_name]
+        # 전체 고객 탭으로 돌아가기
+        notebook.select(tab_names['전체 고객'])
+
     tab_name = name
 
     # Check if the tab already exists
     if tab_name in tab_names:
-        notebook.select(tab_names[tab_name])
+        notebook.select(tab_names[tab_name])  # 이미 열려 있는 경우 해당 탭으로 이동
         return
 
     new_tab = ttk.Frame(notebook)
@@ -94,6 +103,7 @@ def create_customer_tab(notebook, tab_names, customer_id, name, phone, email, ad
     entry_age_edit = tk.Entry(new_tab)
     entry_age_edit.grid(row=6, column=5, padx=10, pady=5)
     entry_age_edit.insert(0, age)
+    entry_age_edit.config(state='disabled')  # 나이 필드 비활성화
 
     # Dates
     entry_session_start = DateEntry(new_tab, date_pattern='yyyy-mm-dd')
@@ -133,16 +143,33 @@ def create_customer_tab(notebook, tab_names, customer_id, name, phone, email, ad
         updated_birth_year = entry_birth_year.get().strip()
         updated_birth_month = entry_birth_month.get().strip()
         updated_birth_day = entry_birth_day.get().strip()
-        updated_birthdate = f"{updated_birth_year}-{int(updated_birth_month):02d}-{int(updated_birth_day):02d}"
-        updated_age = entry_age_edit.get().strip()
+
+        # Calculate age
+        birth_date = datetime(int(updated_birth_year), int(updated_birth_month), int(updated_birth_day))
+        today = datetime.today()
+        updated_age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
+
+        # Disable editing on the age field
+        entry_age_edit.config(state='normal')
+        entry_age_edit.delete(0, tk.END)
+        entry_age_edit.insert(0, updated_age)
+        entry_age_edit.config(state='disabled')
 
         # Update customer information using ID
         update_customer(customer_id, updated_name, updated_phone, updated_email, updated_address,
-                        updated_gender, updated_session_start, updated_session_end,
-                        updated_presenting_problem, updated_session_count, updated_special_notes,
-                        updated_birthdate, updated_age)
+                        updated_gender, updated_birth_year, updated_birth_month, updated_birth_day,
+                        updated_age, updated_session_start, updated_session_end, updated_presenting_problem,
+                        updated_session_count, updated_special_notes)
+
+        # Show a message to confirm the changes
         messagebox.showinfo("저장 완료", "저장되었습니다!")
+        tab_names[tab_name] = new_tab
 
-    tk.Button(new_tab, text="저장", command=save_edits).grid(row=12, column=1, padx=10, pady=10, sticky="w")
 
+    # Save button
+    save_button = tk.Button(new_tab, text="저장", command=save_edits)
+    save_button.grid(row=12, column=0, padx=10, pady=10, sticky="ew", columnspan=2)
 
+    # Mark the tab as active
+    tab_names[tab_name] = new_tab
+    notebook.select(new_tab)
