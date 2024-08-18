@@ -46,6 +46,10 @@ def validate_phone(input_value):
     """전화번호에 숫자와 공백만 허용하는 검증 함수"""
     return all(char.isdigit() or char.isspace() for char in input_value) or input_value == ""
 
+def validate_hyphen(input_value):
+    """"-"만 허용하는 검증 함수"""
+    return  input_value!="-"
+
 def create_field_entries(window):
     """필드 및 라벨 설정을 함수화하여 중복 제거."""
     labels_and_fields = {}
@@ -61,7 +65,7 @@ def create_field_entries(window):
         elif header in ["특이사항"]:
             entry = tk.Text(window, height=10, width=60)
         else:
-            entry = tk.Entry(window, width=60)
+            entry = tk.Entry(window, width=60, validate="key", validatecommand=(window.register(validate_hyphen), "%P"))
         labels_and_fields[header] = entry
     return labels_and_fields
 
@@ -100,35 +104,49 @@ def save_user_data(values, user_id=None):
         consultation_start = values.get("상담시작일", "").strftime('%Y-%m-%d') if isinstance(values.get("상담시작일"), datetime) else values.get("상담시작일", "")
         consultation_end = values.get("상담종료일", "").strftime('%Y-%m-%d') if isinstance(values.get("상담종료일"), datetime) else values.get("상담종료일", "")
         
-        if values["이름"] and values["나이"].isdigit() and values.get("메일", "") and values.get("성별", "") and values.get("전화번호", "") and values.get("주소", "") and consultation_start and consultation_end and values.get("호소문제", "") and values.get("회기 수", 0).isdigit() and values.get("특이사항", ""):
+        # 문자열이 숫자일 경우에만 정수로 변환
+        value_sessions = values.get("회기 수", "0")
+        value_age = values.get("나이",0)
+        
+        if value_sessions.isdigit():
+            sessions = int(value_sessions)
+        else:
+            sessions = "-"  # 기본값
+        
+        if value_age.isdigit():
+            age = int(value_age)
+        else:
+            age = "-" # 기본값
+        
+        if values["이름"]:
             if user_id:
                 sql.update_user(
                     user_id,
-                    name=values["이름"],
-                    age=int(values["나이"]),
-                    email=values.get("메일", ""),
-                    gender=values.get("성별", ""),
-                    phone=values.get("전화번호", ""),
-                    address=values.get("주소", ""),
+                    name=values.get("이름", "") or "-",
+                    age=age,
+                    email=values.get("메일", "") or "-",
+                    gender=values.get("성별", "") or "-",
+                    phone=values.get("전화번호", "") or "-",
+                    address=values.get("주소", "") or "-",
                     consultation_start=consultation_start,
                     consultation_end=consultation_end,
-                    issue=values.get("호소문제", ""),
-                    sessions=int(values.get("회기 수", 0)),
+                    issue=values.get("호소문제", "") or "-",
+                    sessions=sessions,
                     notes=values.get("특이사항", "")
                 )
                 messagebox.showinfo("편집 완료", "리스트가 수정되었습니다.")
             else:
                 sql.create_user(
-                    name=values["이름"],
-                    age=int(values["나이"]),
-                    email=values.get("메일", ""),
-                    gender=values.get("성별", ""),
-                    phone=values.get("전화번호", ""),
-                    address=values.get("주소", ""),
+                    name=values.get("이름", "") or "-",
+                    age=age,
+                    email=values.get("메일", "") or "-",
+                    gender=values.get("성별", "") or "-",
+                    phone=values.get("전화번호", "") or "-",
+                    address=values.get("주소", "") or "-",
                     consultation_start=consultation_start,
                     consultation_end=consultation_end,
-                    issue=values.get("호소문제", ""),
-                    sessions=int(values.get("회기 수", 0)),
+                    issue=values.get("호소문제", "") or "-",
+                    sessions=sessions,
                     notes=values.get("특이사항", "")
                 )
                 messagebox.showinfo("생성 완료", "생성되었습니다.")
