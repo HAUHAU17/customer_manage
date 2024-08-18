@@ -1,4 +1,5 @@
 import sqlite3
+from datetime import datetime
 
 # 데이터베이스 연결 생성 (SQLite는 파일로 데이터베이스를 관리)
 conn = sqlite3.connect('customer_management.db')
@@ -52,23 +53,19 @@ def delete_customer(customer_id):
     conn.commit()
 
 def update_customer(customer_id, updated_name, updated_phone, updated_email, updated_address,
-                     updated_gender, updated_session_start, updated_session_end,
-                     updated_presenting_problem, updated_session_count, updated_special_notes,
-                     updated_birthdate, updated_age):
-    # 생년월일을 연도, 월, 일로 분리합니다.
-    birth_year, birth_month, birth_day = map(int, updated_birthdate.split('-'))
-
+                    updated_gender, updated_birth_year, updated_birth_month, updated_birth_day,
+                    updated_age, updated_session_start, updated_session_end,
+                    updated_presenting_problem, updated_session_count, updated_special_notes):
     cursor.execute("""
         UPDATE customers
         SET name=?, birth_year=?, birth_month=?, birth_day=?, age=?, phone=?, email=?, address=?, gender=?, 
             session_start_date=?, session_end_date=?, presenting_problem=?, session_count=?, special_notes=?
         WHERE id=?
-    """, (updated_name, birth_year, birth_month, birth_day, updated_age,
-          updated_phone, updated_email, updated_address, updated_gender,
-          updated_session_start, updated_session_end, updated_presenting_problem, 
-          updated_session_count, updated_special_notes, customer_id))
+    """, (updated_name, updated_birth_year, updated_birth_month, updated_birth_day, updated_age,
+        updated_phone, updated_email, updated_address, updated_gender,
+        updated_session_start, updated_session_end, updated_presenting_problem, 
+        updated_session_count, updated_special_notes, customer_id))
     conn.commit()
-
 
 
 def get_customer_by_id(customer_id):
@@ -105,6 +102,36 @@ def show_all_customers():
     for customer in customers:
         print(customer)
 
+def validate_birthdate(year, month, day):
+    try:
+        # 연도 검사
+        birth_year = int(year)
+        if birth_year < 1950 or birth_year > 2050 or '':
+            return False
+
+        # 월 검사
+        birth_month = int(month)
+        if birth_month < 1 or birth_month > 12 or '':
+            return False
+
+        # 일 검사 (월별로 일수 체크)
+        birth_day = int(day)
+        if birth_day < 1 or birth_day > 31 or '':
+            return False
+        if birth_month in [4, 6, 9, 11] and birth_day > 30:  # 30일까지만 있는 달
+            return False
+        if birth_month == 2:  # 윤년 계산 포함
+            if (birth_year % 4 == 0 and birth_year % 100 != 0) or (birth_year % 400 == 0):
+                if birth_day > 29:
+                    return False
+            else:
+                if birth_day > 28:
+                    return False
+
+        return True
+    except ValueError:
+        return False
+    
 
 def close_connection():
     conn.close()
