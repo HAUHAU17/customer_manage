@@ -11,30 +11,31 @@ root.geometry("1400x800")  # 메인 창 초기 크기 설정
 
 # Treeview 설정
 headers = [
-    "ID", "이름", "나이", "메일", "성별", "전화번호", "주소", "상담시작일", "상담종료일", "호소문제", "회기 수", "특이사항"
+    "ID", "이름", "생년월일", "연도", "월", "일", "나이", "메일", "성별", "전화번호", "주소", "상담시작일", "상담종료일", "호소문제", "회기 수", "특이사항"
 ]
 viewonly_headers = [
-    "ID", "이름", "나이", "메일", "성별", "전화번호", "주소", "상담시작일", "상담종료일", "회기 수"
+    "ID", "이름", "생년월일", "나이", "메일", "성별", "전화번호", "주소", "상담시작일", "상담종료일", "회기 수"
 ]
 treeview_users = ttk.Treeview(root, columns=viewonly_headers, show='headings')
 
 # 기본 열 너비 설정
 column_widths = {
-    "ID": 50,
-    "이름": 120,
-    "나이": 50,
+    "ID": 10,
+    "이름": 50,
+    "생년월일": 100,
+    "나이": 10,
     "메일": 150,
-    "성별": 50,
-    "전화번호": 120,
-    "주소": 200,
+    "성별": 10,
+    "전화번호": 100,
+    "주소": 300,
     "상담시작일": 100,
     "상담종료일": 100,
-    "회기 수": 80
+    "회기 수": 10
 }
 
 for header in viewonly_headers:
     treeview_users.heading(header, text=header)
-    treeview_users.column(header, width=column_widths.get(header, 100), anchor=tk.W)
+    treeview_users.column(header, width=column_widths.get(header, 100), anchor=tk.CENTER)
 
 treeview_users.grid(row=2, column=0, columnspan=5, padx=10, pady=10, sticky='nsew')
 
@@ -53,19 +54,58 @@ def validate_hyphen(input_value):
 def create_field_entries(window):
     """필드 및 라벨 설정을 함수화하여 중복 제거."""
     labels_and_fields = {}
+    
+    # Helper function to update date entry widget
+    def update_date_entry():
+        year = year_var.get()
+        month = month_var.get()
+        day = day_var.get()
+    
     for header in headers:
         if header in ["ID"]:
             continue
         if header in ["회기 수", "나이"]:
-            entry = tk.Entry(window, width=60, validate="key", validatecommand=(window.register(validate_integer), "%P"))
+            entry = tk.Entry(window, width=10, validate="key", validatecommand=(window.register(validate_integer), "%P"))
         elif header in ["전화번호"]:
-            entry = tk.Entry(window, width=60, validate="key", validatecommand=(window.register(validate_phone), "%P"))
+            entry = tk.Entry(window, width=20, validate="key", validatecommand=(window.register(validate_phone), "%P"))
+        elif header in ["생년월일", "연도", "월", "일"]:
+            # Create lists for year, month, and day dropdowns
+            if header in ["연도"]:
+                years = [str(year) for year in range(1900, datetime.now().year + 1)]
+                year_var = tk.StringVar(value=years[-1])
+                
+                # Year dropdown
+                entry = ttk.Combobox(window, textvariable=year_var, values=years, width=10)
+                entry.bind("<<ComboboxSelected>>", lambda e: update_date_entry())
+            elif header in ["월"]:
+                months = [f"{month:02d}" for month in range(1, 13)]
+                month_var = tk.StringVar(value=datetime.now().month)
+                
+                # Month dropdown
+                entry = ttk.Combobox(window, textvariable=month_var, values=months, width=8)
+                entry.bind("<<ComboboxSelected>>", lambda e: update_date_entry())
+            elif header in ["일"]:
+                days = [f"{day:02d}" for day in range(1, 32)]
+                day_var = tk.StringVar(value=datetime.now().day)
+                
+                # Day dropdown
+                entry = ttk.Combobox(window, textvariable=day_var, values=days, width=8)
+                entry.bind("<<ComboboxSelected>>", lambda e: update_date_entry())
+            else:
+                # Entry widget for date
+                entry = tk.Entry(window, width=10)
         elif header in ["상담시작일", "상담종료일"]:
-            entry = DateEntry(window, width=60, background='darkblue', foreground='white', borderwidth=2, date_pattern='yyyy-mm-dd')
+            entry = DateEntry(window, width=10, background='darkblue', foreground='white', borderwidth=2, date_pattern='yyyy-mm-dd')
         elif header in ["특이사항"]:
             entry = tk.Text(window, height=10, width=60)
         else:
-            entry = tk.Entry(window, width=60, validate="key", validatecommand=(window.register(validate_hyphen), "%P"))
+            if header in ["메일"]:
+                entry = tk.Entry(window, width=30, validate="key", validatecommand=(window.register(validate_hyphen), "%P"))
+            elif header in ["주소", "호소문제"]:
+                entry = tk.Entry(window, width=60, validate="key", validatecommand=(window.register(validate_hyphen), "%P"))
+            else:
+                entry = tk.Entry(window, width=10, validate="key", validatecommand=(window.register(validate_hyphen), "%P"))
+        
         labels_and_fields[header] = entry
     return labels_and_fields
 
@@ -73,9 +113,25 @@ def grid_field_entries(labels_and_fields, window):
     """필드 및 라벨의 그리드를 설정."""
     row = 0
     for label_text, entry in labels_and_fields.items():
-        tk.Label(window, text=label_text).grid(row=row, column=0, padx=10, pady=5, sticky='e')
-        entry.grid(row=row, column=1, padx=10, pady=5)
-        row += 1
+        #if isinstance(entry, tuple):
+        if label_text == "생년월일":
+            # Handling the special case for '생년월일'
+            tk.Label(window, text=label_text).grid(row=row, column=0, padx=10, pady=5, sticky='ew')
+        elif label_text == "연도":
+            entry.grid(row=row, column=1, padx=1, pady=5, sticky='w')
+        elif label_text == "월":
+            entry.grid(row=row, column=2, padx=1, pady=5, sticky='w')
+        elif label_text == "일":
+            entry.grid(row=row, column=3, padx=1, pady=5, sticky='w')
+            row += 1
+        else:
+            tk.Label(window, text=label_text).grid(row=row, column=0, padx=10, pady=5, sticky='ew')
+            if label_text == "이름" or label_text == "나이" or label_text == "성별" or label_text == "회기 수":
+                entry.grid(row=row, column=1, padx=1, pady=5, sticky='w')
+                row += 1
+            else:
+                entry.grid(row=row, column=1, columns = 5, padx=1, pady=5, sticky='w')
+                row += 1
 
 def populate_fields(entries, user_data):
     """기존 데이터를 필드에 채워 넣음."""
@@ -104,10 +160,17 @@ def save_user_data(values, user_id=None):
         consultation_start = values.get("상담시작일", "").strftime('%Y-%m-%d') if isinstance(values.get("상담시작일"), datetime) else values.get("상담시작일", "")
         consultation_end = values.get("상담종료일", "").strftime('%Y-%m-%d') if isinstance(values.get("상담종료일"), datetime) else values.get("상담종료일", "")
         
+        # 생년월일 병합
+        year = values.get("연도", "") or "-"
+        month = values.get("월", "") or "-"
+        day = values.get("일", "") or "-"
+        birth = str(year) + "-" + str(month) + "-" + str(day)
+        
         # 문자열이 숫자일 경우에만 정수로 변환
         value_sessions = values.get("회기 수", "0")
         value_age = values.get("나이",0)
         
+        # 나이, 회기 수 정수값여부 체크
         if value_sessions.isdigit():
             sessions = int(value_sessions)
         else:
@@ -123,6 +186,10 @@ def save_user_data(values, user_id=None):
                 sql.update_user(
                     user_id,
                     name=values.get("이름", "") or "-",
+                    birth=birth,
+                    year=year,
+                    month=month,
+                    day=day,
                     age=age,
                     email=values.get("메일", "") or "-",
                     gender=values.get("성별", "") or "-",
@@ -138,6 +205,10 @@ def save_user_data(values, user_id=None):
             else:
                 sql.create_user(
                     name=values.get("이름", "") or "-",
+                    birth=birth,
+                    year=year,
+                    month=month,
+                    day=day,
                     age=age,
                     email=values.get("메일", "") or "-",
                     gender=values.get("성별", "") or "-",
@@ -175,7 +246,7 @@ def open_create_user_window():
         create_window.destroy()
 
     button_save = tk.Button(create_window, text="저장", command=save_new_user)
-    button_save.grid(row=len(headers), column=1, padx=10, pady=10)
+    button_save.grid(row=len(headers), column=5, padx=10, pady=10)
 
 def open_update_window(user_id):
     user_data = [row for row in sql.read_users() if str(row[0]) == user_id][0]
@@ -203,7 +274,7 @@ def open_update_window(user_id):
         update_window.destroy()
 
     button_save = tk.Button(update_window, text="저장", command=save_updates)
-    button_save.grid(row=len(headers), column=1, padx=10, pady=10)
+    button_save.grid(row=len(headers), column=5, padx=10, pady=10)
 
 def read_users_gui(search_query=None):
     treeview_users.delete(*treeview_users.get_children())
@@ -267,7 +338,7 @@ def show_all_users():
 
 # 검색 필드 및 드롭다운 메뉴 설정
 label_search = tk.Label(root, text="분류")
-label_search.grid(row=0, column=0, padx=10, pady=10, sticky='w')
+label_search.grid(row=0, column=0, padx=10, pady=10, sticky='e')
 
 search_field_var = tk.StringVar(value="이름")  # 기본 검색 필드를 이름으로 설정
 

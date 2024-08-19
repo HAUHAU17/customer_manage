@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, font
 from datetime import datetime
 from tkcalendar import DateEntry 
 
@@ -10,6 +10,11 @@ from customer_tab import create_customer_tab
 root = tk.Tk()
 root.title("고객 관리 프로그램")
 root.geometry("1000x600")  # Set default window size
+
+# 기본 글꼴 설정
+base_font = font.nametofont("TkDefaultFont")
+base_font.configure(family="Malgun Gothic", size=10) 
+
 notebook = ttk.Notebook(root)
 notebook.pack(expand=1, fill='both')
 
@@ -86,6 +91,9 @@ def clear_entries():
     entry_special_notes.delete("1.0", tk.END)
 
 
+    treeview_customers.tag_configure('custom_font', font=base_font)
+    for item in treeview_customers.get_children():
+        treeview_customers.item(item, tags=('custom_font',))
 
 
 def delete_selected_customer():
@@ -129,6 +137,40 @@ def close_app():
 
 root.protocol("WM_DELETE_WINDOW", close_app)
 
+# 메뉴바 생성
+menubar = tk.Menu(root)
+root.config(menu=menubar)
+
+# '설정' 메뉴 추가
+settings_menu = tk.Menu(menubar, tearoff=0)
+menubar.add_cascade(label="설정", menu=settings_menu)
+
+def set_font_size(size):
+    # 모든 기본 폰트의 크기 변경
+    base_font.configure(size=size)
+    
+    # 모든 위젯의 폰트 크기를 다시 설정 (font 옵션이 있는 위젯만)
+    for widget in root.winfo_children():
+        if hasattr(widget, 'configure'):
+            try:
+                widget.configure(font=base_font)
+            except tk.TclError:
+                pass  # 폰트를 지원하지 않는 위젯은 무시
+    # Treeview의 헤더와 항목 폰트 크기 변경
+    tree_font = font.Font(family="Malgun Gothic", size=size)
+    for col in treeview_customers["columns"]:
+        treeview_customers.heading(col, font=tree_font)  # 헤더 폰트 크기 변경
+    treeview_customers.tag_configure('custom_font', font=tree_font)
+    for item in treeview_customers.get_children():
+        treeview_customers.item(item, tags=('custom_font',))
+
+# '글자 크기 조절' 메뉴 추가
+font_menu = tk.Menu(settings_menu, tearoff=0)
+# 포인트 단위로 절대 크기 설정
+for size_label, size in [("100%", 10), ("110%", 11), ("120%", 12), ("130%", 13), ("140%", 14), ("150%", 15)]:
+    font_menu.add_command(label=size_label, command=lambda s=size: set_font_size(s))
+settings_menu.add_cascade(label="글자 크기 조절", menu=font_menu)
+
 
 # 첫 번째 탭: 전체 고객
 tab_all_customers = ttk.Frame(notebook)
@@ -145,6 +187,7 @@ search_button.pack(side="left", padx=10)
 
 view_all_button = tk.Button(frame_search, text="전체보기", command=show_all_customers)
 view_all_button.pack(side="left")
+
 
 # Treeview for displaying customers
 treeview_customers = ttk.Treeview(tab_all_customers, columns=("ID", "Name", "Birthdate", "Age", "Phone", "Email", "Address", "Gender", "Session Start", "Session End", "Session Count"), show='headings')
@@ -174,7 +217,7 @@ treeview_customers.column("Session Count", width=80, anchor="w")
 
 treeview_customers.pack(padx=10, pady=10, fill="both", expand=True)
 treeview_customers.bind("<Double-1>", show_customer_info)
-
+entry_search.focus()
 load_customers(treeview_customers, get_customers, query="")
 
 # 두 번째 탭: 고객 추가
