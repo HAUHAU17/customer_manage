@@ -11,7 +11,7 @@ root.geometry("1400x800")  # 메인 창 초기 크기 설정
 
 # Treeview 설정
 headers = [
-    "ID", "이름", "생년월일", "연도", "월", "일", "나이", "메일", "성별", "남자", "여자", "전화번호", "주소", "상담시작일", "상담종료일", "호소문제", "회기 수", "특이사항"
+    "ID", "이름", "생년월일", "년", "월", "일", "나이", "메일", "성별", "남자", "여자", "전화번호", "주소", "상담시작일", "상담종료일", "호소문제-1", "호소문제-2", "회기 수", "특이사항"
 ]
 viewonly_headers = [
     "ID", "이름", "생년월일", "나이", "메일", "성별", "전화번호", "주소", "상담시작일", "상담종료일", "회기 수"
@@ -57,26 +57,35 @@ def create_field_entries(window):
     """필드 및 라벨 설정을 함수화하여 중복 제거."""
     labels_and_fields = {}
     
-    def calculate_age(birth_date):
-        """생년월일을 입력받아 나이를 계산합니다."""
-        today = datetime.today()
-        age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
-        return age
+    def calculate_age():
+        try:
+            """생년월일을 입력받아 나이를 계산합니다."""
+            year_entry = labels_and_fields.get("년")
+            month_entry = labels_and_fields.get("월")
+            day_entry = labels_and_fields.get("일")
+
+            birth_year = int(year_entry.get())
+            birth_month = int(month_entry.get())
+            birth_day = int(day_entry.get())
+            birth_date = datetime(birth_year, birth_month, birth_day)
+
+            today = datetime.today()
+            age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
+            
+            age_entry = labels_and_fields.get("나이")
+            if age_entry:
+                age_entry.config(state=tk.NORMAL)  # Enable editing
+                age_entry.delete(0, tk.END)
+                age_entry.insert(0, "-" if age == 0 else str(age))
+                age_entry.config(state=tk.DISABLED)  # Disable editing
+        except ValueError:
+            pass  # 값이 입력되기 전에 발생하는 오류를 무시
     
     # Helper function to update date entry widget
-    def update_date_entry():
-        year = year_var.get()
-        month = month_var.get()
-        day = day_var.get()
-        
-        birth_date = datetime(int(year), int(month), int(day))
-        age = calculate_age(birth_date)
-        age_entry = labels_and_fields.get("나이")
-        if age_entry:
-            age_entry.config(state=tk.NORMAL)  # Enable editing
-            age_entry.delete(0, tk.END)
-            age_entry.insert(0, "-" if age == 0 else str(age))
-            age_entry.config(state=tk.DISABLED)  # Disable editing
+    def on_key_release(event):
+        # 모든 필드가 채워지면 나이 계산
+        if all(labels_and_fields.get(field).get() for field in ["년", "월", "일"]):
+            calculate_age()
     
     for header in headers:
         if header in ["ID"]:
@@ -85,41 +94,30 @@ def create_field_entries(window):
             entry = tk.Entry(window, width=10, validate="key", validatecommand=(window.register(validate_integer), "%P"))
         elif header in ["전화번호"]:
             entry = tk.Entry(window, width=20, validate="key", validatecommand=(window.register(validate_phone), "%P"))
-        elif header in ["생년월일", "연도", "월", "일", "나이"]:
+        elif header in ["생년월일", "년", "월", "일", "나이"]:
             # Create lists for year, month, and day dropdowns
-            if header in ["연도"]:
-                years = [str(year) for year in range(1900, datetime.now().year + 1)]
-                year_var = tk.StringVar(value=years[-1])
-                
-                # Year dropdown
-                entry = ttk.Combobox(window, textvariable=year_var, values=years, width=10)
-                entry.bind("<<ComboboxSelected>>", lambda e: update_date_entry())
+            if header in ["년"]:
+                entry = tk.Entry(window, width=10, validate="key", validatecommand=(window.register(validate_integer), "%P"))
+                entry.bind('<KeyRelease>', on_key_release)
             elif header in ["월"]:
-                months = [f"{month:02d}" for month in range(1, 13)]
-                month_var = tk.StringVar(value=datetime.now().month)
-                
-                # Month dropdown
-                entry = ttk.Combobox(window, textvariable=month_var, values=months, width=8)
-                entry.bind("<<ComboboxSelected>>", lambda e: update_date_entry())
+                entry = tk.Entry(window, width=5, validate="key", validatecommand=(window.register(validate_integer), "%P"))
+                entry.bind('<KeyRelease>', on_key_release)
             elif header in ["일"]:
-                days = [f"{day:02d}" for day in range(1, 32)]
-                day_var = tk.StringVar(value=datetime.now().day)
-                
-                # Day dropdown
-                entry = ttk.Combobox(window, textvariable=day_var, values=days, width=8)
-                entry.bind("<<ComboboxSelected>>", lambda e: update_date_entry())
+                entry = tk.Entry(window, width=5, validate="key", validatecommand=(window.register(validate_integer), "%P"))
+                entry.bind('<KeyRelease>', on_key_release)
             elif header in ["생년월일"]:
                 # Entry widget for date
-                entry = tk.Entry(window, width=10)
+                entry = tk.Entry(window, width=5)
             else:
-                entry = tk.Entry(window, width=10, validate="key", validatecommand=(window.register(validate_integer), "%P"))
+                entry = tk.Entry(window, width=5, validate="key", validatecommand=(window.register(validate_integer), "%P"))
+                entry.config(state=tk.DISABLED)  # Disable editing
         elif header in ["상담시작일", "상담종료일"]:
             entry = DateEntry(window, width=10, background='darkblue', foreground='white', borderwidth=2, date_pattern='yyyy-mm-dd')
         elif header in ["특이사항"]:
             entry = tk.Text(window, height=10, width=60)
         elif header in ["메일"]:
             entry = tk.Entry(window, width=30, validate="key", validatecommand=(window.register(validate_hyphen), "%P"))
-        elif header in ["주소", "호소문제"]:
+        elif header in ["주소", "호소문제-1", "호소문제-2"]:
             entry = tk.Entry(window, width=60, validate="key", validatecommand=(window.register(validate_hyphen), "%P"))
         elif header in ["성별", "남자", "여자"]:
             if header in ["남자"]:
@@ -142,12 +140,15 @@ def grid_field_entries(labels_and_fields, window):
         if label_text == "생년월일" or label_text == "성별":
             # Handling the special case for "생년월일", "성별"
             tk.Label(window, text=label_text).grid(row=row, column=0, padx=10, pady=5, sticky='ew')
-        elif label_text == "연도":
+        elif label_text == "년":
             entry.grid(row=row, column=1, padx=1, pady=5, sticky='w')
+            tk.Label(window, text=label_text).grid(row=row, column=2, padx=1, pady=5, sticky='w')
         elif label_text == "월":
-            entry.grid(row=row, column=2, padx=1, pady=5, sticky='w')
-        elif label_text == "일":
             entry.grid(row=row, column=3, padx=1, pady=5, sticky='w')
+            tk.Label(window, text=label_text).grid(row=row, column=4, padx=1, pady=5, sticky='w')
+        elif label_text == "일":
+            entry.grid(row=row, column=5, padx=1, pady=5, sticky='e')
+            tk.Label(window, text=label_text).grid(row=row, column=6, padx=1, pady=5, sticky='w')
             row += 1
         elif label_text == "남자":
             entry.grid(row=row, column=1, padx=1, pady=5, sticky='w')
@@ -160,7 +161,7 @@ def grid_field_entries(labels_and_fields, window):
                 entry.grid(row=row, column=1, padx=1, pady=5, sticky='w')
                 row += 1
             else:
-                entry.grid(row=row, column=1, columns = 5, padx=1, pady=5, sticky='w')
+                entry.grid(row=row, column=1, columnspan=20, padx=1, pady=5, sticky='w')
                 row += 1
 
 def populate_fields(entries, user_data):
@@ -200,29 +201,33 @@ def save_user_data(values, user_id=None):
         
         # 생년월일 병합
         today = datetime.today()
-        year = values.get("연도", "") or "-"
-        month = values.get("월", "") or "-"
-        day = values.get("일", "") or "-"
+        year = values.get("년", "").strip()
+        month = values.get("월", "").strip()
+        day = values.get("일", "").strip()
 
-        if today.year == int(year) and today.month == int(month) and today.day == int(day):
+        # 기본값 설정
+        if not year or not month or not day:
             birth = "-"
+            age = "-"
         else:
-            birth = str(year) + "-" + str(month) + "-" + str(day)
+            # 숫자로 변환하고 예외 처리
+            age = values.get("나이", 0)
+            try:
+                year = int(year)
+                month = int(month)
+                day = int(day)
+                birth = f"{year}-{month:02d}-{day:02d}"
+            except ValueError:
+                birth = "-"  # 변환 실패 시 기본값 설정
         
         # 문자열이 숫자일 경우에만 정수로 변환
         value_sessions = values.get("회기 수", 0)
-        value_age = values.get("나이", 0)
         
         # 나이, 회기 수 정수값여부 체크
         if value_sessions.isdigit():
             sessions = int(value_sessions)
         else:
             sessions = "-"  # 기본값
-        
-        if value_age.isdigit():
-            age = int(value_age)
-        else:
-            age = "-" # 기본값
         
         if values["이름"]:
             if user_id:
@@ -242,7 +247,8 @@ def save_user_data(values, user_id=None):
                     address=values.get("주소", "") or "-",
                     consultation_start=consultation_start,
                     consultation_end=consultation_end,
-                    issue=values.get("호소문제", "") or "-",
+                    issue_1=values.get("호소문제-1", "") or "-",
+                    issue_2=values.get("호소문제-2", "") or "-",
                     sessions=sessions,
                     notes=values.get("특이사항", "")
                 )
@@ -263,7 +269,8 @@ def save_user_data(values, user_id=None):
                     address=values.get("주소", "") or "-",
                     consultation_start=consultation_start,
                     consultation_end=consultation_end,
-                    issue=values.get("호소문제", "") or "-",
+                    issue_1=values.get("호소문제-1", "") or "-",
+                    issue_2=values.get("호소문제-2", "") or "-",
                     sessions=sessions,
                     notes=values.get("특이사항", "")
                 )
