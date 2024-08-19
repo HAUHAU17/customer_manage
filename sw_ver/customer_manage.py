@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import messagebox, ttk
+from tkinter import font
 from tkcalendar import DateEntry
 import sql  # sql.py 파일을 import
 from datetime import datetime
@@ -9,6 +10,10 @@ import pandas as pd
 root = tk.Tk()
 root.title("고객 관리 프로그램")
 root.geometry("1400x800")  # 메인 창 초기 크기 설정
+
+# 기본 폰트 크기
+BASE_FONT_SIZE = 12
+custom_font = font.Font(size=BASE_FONT_SIZE)
 
 # Treeview 설정
 headers = [
@@ -41,6 +46,35 @@ for header in viewonly_headers:
 treeview_users.grid(row=2, column=0, columnspan=5, padx=10, pady=10, sticky='nsew')
 
 gender_var = tk.StringVar()
+
+def update_font_size(percent):
+    size = int(BASE_FONT_SIZE * percent / 100)
+    global custom_font
+    custom_font = font.Font(size=size)
+
+    # 적용할 위젯 리스트
+    all_widgets = [entry_search, button_search, button_show_all, button_create, button_update, button_delete, export_button]
+    for widget in all_widgets:
+        widget.config(font=custom_font)
+    
+    # Treeview의 스타일 업데이트
+    style = ttk.Style()
+    style.configure("Treeview", font=custom_font)
+
+def set_font_size(percent):
+    update_font_size(percent)
+
+def create_menu(root):
+    menu_bar = tk.Menu(root)
+    root.config(menu=menu_bar)
+    
+    font_menu = tk.Menu(menu_bar, tearoff=0)
+    menu_bar.add_cascade(label="글씨 크기", menu=font_menu)
+    
+    # 퍼센트 항목 추가
+    percent_buttons = [100, 110, 120, 130, 140, 150]
+    for percent in percent_buttons:
+        font_menu.add_command(label=f"{percent}%", command=lambda p=percent: set_font_size(p))
 
 def validate_integer(input_value):
     """정수만 허용하는 검증 함수"""
@@ -454,6 +488,9 @@ treeview_users.bind("<Double-1>", on_user_select)
 
 # 시작 시 사용자 목록 읽기
 read_users_gui()
+
+# 메뉴바 생성
+create_menu(root)
 
 # GUI 루프 시작
 root.mainloop()
