@@ -58,7 +58,7 @@ def create_field_entries(window):
     def calculate_age(birth_date):
         """생년월일을 입력받아 나이를 계산합니다."""
         today = datetime.today()
-        age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month,     birth_date.day))
+        age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
         return age
     
     # Helper function to update date entry widget
@@ -73,7 +73,7 @@ def create_field_entries(window):
         if age_entry:
             age_entry.config(state=tk.NORMAL)  # Enable editing
             age_entry.delete(0, tk.END)
-            age_entry.insert(0, str(age))
+            age_entry.insert(0, "-" if age == 0 else str(age))
             age_entry.config(state=tk.DISABLED)  # Disable editing
     
     for header in headers:
@@ -115,13 +115,14 @@ def create_field_entries(window):
             entry = DateEntry(window, width=10, background='darkblue', foreground='white', borderwidth=2, date_pattern='yyyy-mm-dd')
         elif header in ["특이사항"]:
             entry = tk.Text(window, height=10, width=60)
+        elif header in ["메일"]:
+            entry = tk.Entry(window, width=30, validate="key", validatecommand=(window.register(validate_hyphen), "%P"))
+        elif header in ["주소", "호소문제"]:
+            entry = tk.Entry(window, width=60, validate="key", validatecommand=(window.register(validate_hyphen), "%P"))
+        elif header in ["성별"]:
+            entry = tk.Entry(window, width=10, validate="key", validatecommand=(window.register(validate_hyphen), "%P"))
         else:
-            if header in ["메일"]:
-                entry = tk.Entry(window, width=30, validate="key", validatecommand=(window.register(validate_hyphen), "%P"))
-            elif header in ["주소", "호소문제"]:
-                entry = tk.Entry(window, width=60, validate="key", validatecommand=(window.register(validate_hyphen), "%P"))
-            else:
-                entry = tk.Entry(window, width=10, validate="key", validatecommand=(window.register(validate_hyphen), "%P"))
+            entry = tk.Entry(window, width=10, validate="key", validatecommand=(window.register(validate_hyphen), "%P"))
         
         labels_and_fields[header] = entry
     return labels_and_fields
@@ -181,14 +182,19 @@ def save_user_data(values, user_id=None):
         consultation_end = values.get("상담종료일", "").strftime('%Y-%m-%d') if isinstance(values.get("상담종료일"), datetime) else values.get("상담종료일", "")
         
         # 생년월일 병합
+        today = datetime.today()
         year = values.get("연도", "") or "-"
         month = values.get("월", "") or "-"
         day = values.get("일", "") or "-"
-        birth = str(year) + "-" + str(month) + "-" + str(day)
+
+        if today.year == int(year) and today.month == int(month) and today.day == int(day):
+            birth = "-"
+        else:
+            birth = str(year) + "-" + str(month) + "-" + str(day)
         
         # 문자열이 숫자일 경우에만 정수로 변환
-        value_sessions = values.get("회기 수", "0")
-        value_age = values.get("나이",0)
+        value_sessions = values.get("회기 수", 0)
+        value_age = values.get("나이", 0)
         
         # 나이, 회기 수 정수값여부 체크
         if value_sessions.isdigit():
