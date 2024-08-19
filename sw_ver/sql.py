@@ -97,6 +97,14 @@ def delete_user(user_id):
     c.execute('DELETE FROM users WHERE id = ?', (user_id,))
     conn.commit()
 
+def fetch_users():
+    """모든 고객 데이터를 가져오는 함수"""
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM users")  # 'users'는 데이터베이스 테이블 이름
+    rows = cursor.fetchall()
+    conn.close()
+    return rows
+
 def close_connection():
     conn.close()
 

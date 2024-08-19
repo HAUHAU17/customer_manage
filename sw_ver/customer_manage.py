@@ -3,6 +3,7 @@ from tkinter import messagebox, ttk
 from tkcalendar import DateEntry
 import sql  # sql.py 파일을 import
 from datetime import datetime
+import pandas as pd
 
 # GUI 애플리케이션 생성
 root = tk.Tk()
@@ -220,6 +221,11 @@ def save_user_data(values, user_id=None):
             except ValueError:
                 birth = "-"  # 변환 실패 시 기본값 설정
         
+        #성별
+        gender = gender_var.get()
+        male = "o" if gender == "남" else ""
+        female = "o" if gender == "여" else ""
+
         # 문자열이 숫자일 경우에만 정수로 변환
         value_sessions = values.get("회기 수", 0)
         
@@ -241,8 +247,8 @@ def save_user_data(values, user_id=None):
                     age=age,
                     email=values.get("메일", "") or "-",
                     gender=gender_var.get() or "-",
-                    male=gender_var.get() or "-",
-                    female=gender_var.get() or "-",
+                    male=male,
+                    female=female,
                     phone=values.get("전화번호", "") or "-",
                     address=values.get("주소", "") or "-",
                     consultation_start=consultation_start,
@@ -263,8 +269,8 @@ def save_user_data(values, user_id=None):
                     age=age,
                     email=values.get("메일", "") or "-",
                     gender=gender_var.get() or "-",
-                    male=gender_var.get() or "-",
-                    female=gender_var.get() or "-",
+                    male=male,
+                    female=female,
                     phone=values.get("전화번호", "") or "-",
                     address=values.get("주소", "") or "-",
                     consultation_start=consultation_start,
@@ -391,6 +397,13 @@ def show_all_users():
     entry_search.delete(0, tk.END)  # 검색 입력 필드 비우기
     read_users_gui()  # 전체 목록 불러오기
 
+def export_to_excel():
+    """현재 데이터를 엑셀 파일로 내보내는 함수"""
+    data = sql.fetch_users()  # 데이터베이스에서 고객 데이터 가져오기
+    df = pd.DataFrame(data, columns=headers)
+    df.to_excel('고객_목록.xlsx', index=False, engine='openpyxl')
+    messagebox.showinfo("정보", "데이터가 엑셀 파일로 내보내졌습니다.")
+
 # 검색 필드 및 드롭다운 메뉴 설정
 label_search = tk.Label(root, text="분류")
 label_search.grid(row=0, column=0, padx=10, pady=10, sticky='e')
@@ -425,6 +438,9 @@ button_update.grid(row=0, column=1, padx=10)
 
 button_delete = tk.Button(button_frame, text="삭제", command=delete_user_gui)
 button_delete.grid(row=0, column=2, padx=10)
+
+export_button = tk.Button(button_frame, text="목록 추출", command=export_to_excel)
+export_button.grid(row=0, column=3, padx=5, pady=5)
 
 # Bind the Enter key to the search_users function
 entry_search.bind("<Return>", search_users)
