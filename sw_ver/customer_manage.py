@@ -11,7 +11,7 @@ root.geometry("1400x800")  # 메인 창 초기 크기 설정
 
 # Treeview 설정
 headers = [
-    "ID", "이름", "생년월일", "연도", "월", "일", "나이", "메일", "성별", "전화번호", "주소", "상담시작일", "상담종료일", "호소문제", "회기 수", "특이사항"
+    "ID", "이름", "생년월일", "연도", "월", "일", "나이", "메일", "성별", "남자", "여자", "전화번호", "주소", "상담시작일", "상담종료일", "호소문제", "회기 수", "특이사항"
 ]
 viewonly_headers = [
     "ID", "이름", "생년월일", "나이", "메일", "성별", "전화번호", "주소", "상담시작일", "상담종료일", "회기 수"
@@ -38,6 +38,8 @@ for header in viewonly_headers:
     treeview_users.column(header, width=column_widths.get(header, 100), anchor=tk.CENTER)
 
 treeview_users.grid(row=2, column=0, columnspan=5, padx=10, pady=10, sticky='nsew')
+
+gender_var = tk.StringVar()
 
 def validate_integer(input_value):
     """정수만 허용하는 검증 함수"""
@@ -119,8 +121,14 @@ def create_field_entries(window):
             entry = tk.Entry(window, width=30, validate="key", validatecommand=(window.register(validate_hyphen), "%P"))
         elif header in ["주소", "호소문제"]:
             entry = tk.Entry(window, width=60, validate="key", validatecommand=(window.register(validate_hyphen), "%P"))
-        elif header in ["성별"]:
-            entry = tk.Entry(window, width=10, validate="key", validatecommand=(window.register(validate_hyphen), "%P"))
+        elif header in ["성별", "남자", "여자"]:
+            if header in ["남자"]:
+                entry = tk.Radiobutton(window, text="남", variable=gender_var, value="남")
+            elif header in ["여자"]:
+                entry = tk.Radiobutton(window, text="여", variable=gender_var, value="여")
+            else:
+                entry = tk.Entry(window, width=10)
+            gender_var.set("-")
         else:
             entry = tk.Entry(window, width=10, validate="key", validatecommand=(window.register(validate_hyphen), "%P"))
         
@@ -131,9 +139,8 @@ def grid_field_entries(labels_and_fields, window):
     """필드 및 라벨의 그리드를 설정."""
     row = 0
     for label_text, entry in labels_and_fields.items():
-        #if isinstance(entry, tuple):
-        if label_text == "생년월일":
-            # Handling the special case for '생년월일'
+        if label_text == "생년월일" or label_text == "성별":
+            # Handling the special case for "생년월일", "성별"
             tk.Label(window, text=label_text).grid(row=row, column=0, padx=10, pady=5, sticky='ew')
         elif label_text == "연도":
             entry.grid(row=row, column=1, padx=1, pady=5, sticky='w')
@@ -142,9 +149,14 @@ def grid_field_entries(labels_and_fields, window):
         elif label_text == "일":
             entry.grid(row=row, column=3, padx=1, pady=5, sticky='w')
             row += 1
+        elif label_text == "남자":
+            entry.grid(row=row, column=1, padx=1, pady=5, sticky='w')
+        elif label_text == "여자":
+            entry.grid(row=row, column=2, padx=1, pady=5, sticky='w')
+            row += 1
         else:
             tk.Label(window, text=label_text).grid(row=row, column=0, padx=10, pady=5, sticky='ew')
-            if label_text == "이름" or label_text == "나이" or label_text == "성별" or label_text == "회기 수":
+            if label_text == "이름" or label_text == "나이" or label_text == "회기 수":
                 entry.grid(row=row, column=1, padx=1, pady=5, sticky='w')
                 row += 1
             else:
@@ -163,10 +175,15 @@ def populate_fields(entries, user_data):
             if date_str:
                 entry.set_date(datetime.strptime(date_str, '%Y-%m-%d'))  # DateEntry에 날짜 설정
         else:
-            # tk.Text와 tk.Entry를 구분하여 처리
+            # tk.Text, tk.Entry를, tk.Radiobutton 구분하여 처리
             if isinstance(entry, tk.Text):
                 entry.delete("1.0", tk.END)  # 기존 내용을 삭제
                 entry.insert("1.0", user_data[index])  # 텍스트 삽입
+            elif isinstance(entry, tk.Radiobutton):
+                if user_data[index] == "남":
+                    gender_var.set("남")  # 남성 선택
+                elif user_data[index] == "여":
+                    gender_var.set("여")  # 여성 선택
             else:
                 entry.delete(0, tk.END)  # 기존 내용을 삭제
                 entry.insert(0, user_data[index])  # 텍스트 삽입
@@ -218,7 +235,9 @@ def save_user_data(values, user_id=None):
                     day=day,
                     age=age,
                     email=values.get("메일", "") or "-",
-                    gender=values.get("성별", "") or "-",
+                    gender=gender_var.get() or "-",
+                    male=gender_var.get() or "-",
+                    female=gender_var.get() or "-",
                     phone=values.get("전화번호", "") or "-",
                     address=values.get("주소", "") or "-",
                     consultation_start=consultation_start,
@@ -237,7 +256,9 @@ def save_user_data(values, user_id=None):
                     day=day,
                     age=age,
                     email=values.get("메일", "") or "-",
-                    gender=values.get("성별", "") or "-",
+                    gender=gender_var.get() or "-",
+                    male=gender_var.get() or "-",
+                    female=gender_var.get() or "-",
                     phone=values.get("전화번호", "") or "-",
                     address=values.get("주소", "") or "-",
                     consultation_start=consultation_start,
