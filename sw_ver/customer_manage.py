@@ -280,8 +280,9 @@ def open_update_window(user_id):
     # 기존 데이터로 필드 채우기
     populate_fields(entries, user_data)
 
+	# 새 창 열릴 때 Name 입력 필드에 포커스
     entry_name = entries["이름"]
-    entry_name.focus_set()  # 새 창 열릴 때 Name 입력 필드에 포커스
+    entry_name.focus_set()
 
     def save_updates():
         values = {
