@@ -1,5 +1,6 @@
 import sqlite3
 from datetime import datetime
+import tkinter as tk
 
 # 데이터베이스 연결 생성 (SQLite는 파일로 데이터베이스를 관리)
 conn = sqlite3.connect('customer_management.db')
@@ -26,6 +27,33 @@ cursor.execute('''CREATE TABLE IF NOT EXISTS customers (
                   special_notes TEXT)''')
 
 conn.commit()
+
+def load_customers(treeview_customers, get_customers, query=""):
+    customers = get_customers(query)
+    treeview_customers.delete(*treeview_customers.get_children())
+    
+    for customer in customers:
+        # Extract values from customer tuple, handle missing values
+        id = customer[0]
+        name = customer[1]
+        birth_year = customer[2] if customer[2] else "0000"
+        birth_month = f"{int(customer[3]):02d}" if customer[3] else "00"
+        birth_day = f"{int(customer[4]):02d}" if customer[4] else "00"
+        age = customer[5] if customer[5] else ""
+        phone = customer[6] if customer[6] else ""
+        email = customer[7] if customer[7] else ""
+        address = customer[8] if customer[8] else ""
+        gender = customer[9] if customer[9] else ""
+        session_start_date = customer[10] if customer[10] else ""
+        session_end_date = customer[11] if customer[11] else ""
+        session_count = customer[13] if customer[13] else "" 
+
+        birthdate = f"{birth_year}-{birth_month}-{birth_day}"
+        
+        treeview_customers.insert('', tk.END, values=(id, name, birthdate, age, phone, email, address, gender,
+                                                      session_start_date, session_end_date, session_count))  
+
+
 
 def add_customer(name, birth_year, birth_month, birth_day, age, phone, email, address, gender,
                  session_start_date, session_end_date, presenting_problem, session_count, special_notes):
@@ -104,19 +132,21 @@ def show_all_customers():
 
 def validate_birthdate(year, month, day):
     try:
+        if not year and not month and not day:
+            return True
         # 연도 검사
         birth_year = int(year)
-        if birth_year < 1950 or birth_year > 2050 or '':
+        if birth_year < 1950 or birth_year > 2050 or birth_year == '0000':
             return False
 
         # 월 검사
         birth_month = int(month)
-        if birth_month < 1 or birth_month > 12 or '':
+        if birth_month < 1 or birth_month > 12 or birth_month == '00':
             return False
 
         # 일 검사 (월별로 일수 체크)
         birth_day = int(day)
-        if birth_day < 1 or birth_day > 31 or '':
+        if birth_day < 1 or birth_day > 31 or birth_day == '00':
             return False
         if birth_month in [4, 6, 9, 11] and birth_day > 30:  # 30일까지만 있는 달
             return False
