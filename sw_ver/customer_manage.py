@@ -5,6 +5,7 @@ from tkcalendar import DateEntry
 import sql  # sql.py 파일을 import
 from datetime import datetime
 import pandas as pd
+import json
 
 # GUI 애플리케이션 생성
 root = tk.Tk()
@@ -13,7 +14,8 @@ root.geometry("1400x800")  # 메인 창 초기 크기 설정
 
 # 기본 폰트 크기
 BASE_FONT_SIZE = 10
-custom_font = font.Font(size=BASE_FONT_SIZE)
+custom_font = ("Arial", BASE_FONT_SIZE)
+settings = {}
 
 # Treeview 설정
 headers = [
@@ -52,8 +54,8 @@ gender_var = tk.StringVar()
 
 def update_font_size(percent, all_widgets):
     size = int(BASE_FONT_SIZE * percent / 100)
-    global custom_font
-    custom_font = font.Font(size=size)
+    global custom_font, settings
+    custom_font = ("Arial", size)
 
     # 적용할 위젯 리스트
     for widget in all_widgets:
@@ -63,10 +65,24 @@ def update_font_size(percent, all_widgets):
     style = ttk.Style()
     style.configure("Treeview", font=custom_font)
 
-def set_font_size(percent, all_widgets):
+    settings["font_size"] = percent
+    save_settings(settings)
+
+def set_font_size(percent, all_widgets, var):
     update_font_size(percent, all_widgets)
+    var.set(percent)  # 현재 선택된 폰트 크기를 업데이트
+    update_checkmarks()  # 체크 표시 업데이트
+
+def update_checkmarks():
+    global font_menu
+    for index, percent in enumerate(percent_buttons):
+        if percent == var.get():
+            font_menu.entryconfig(index, indicatoron=True, selectcolor="lightgray", background="lightgray", foreground="blue")
+        else:
+            font_menu.entryconfig(index, indicatoron=False, background="white", foreground="black")
 
 def create_menu(root, all_widgets):
+    global font_menu, percent_buttons, var
     menu_bar = tk.Menu(root)
     root.config(menu=menu_bar)
     
@@ -78,8 +94,15 @@ def create_menu(root, all_widgets):
 
     # 퍼센트 항목 추가
     percent_buttons = [100, 110, 120, 130, 140, 150]
+
+    # 현재 선택된 폰트 크기를 저장할 변수
+    var = tk.IntVar(value=settings.get("font_size", 100))
+    
     for percent in percent_buttons:
-        font_menu.add_command(label=f"{percent}%", command=lambda p=percent: set_font_size(p, all_widgets))
+        font_menu.add_radiobutton(label=f"{percent}%", variable=var, value=percent, command=lambda p=percent: set_font_size(p, all_widgets, var))
+    
+    # 초기 체크 표시 업데이트
+    update_checkmarks()
 
 def update_age(year, month, day):
     today = datetime.today()
@@ -212,6 +235,7 @@ def create_field_entries(window):
         window_widgets.append(entry)
     
     # 메뉴바 생성
+    update_font_size(settings["font_size"], window_widgets)
     create_menu(window, window_widgets)  # Pass the widget list to create_menu
     
     return labels_and_fields, special_entries
@@ -548,6 +572,10 @@ def read_users_gui(search_query=None):
         
     # 메뉴바 생성
     main_widgets = [entry_search, button_search, button_show_all, button_create, button_update, button_delete, export_button]
+    
+    settings = load_settings()
+    update_font_size(settings["font_size"], main_widgets)
+
     create_menu(root, main_widgets)
 
 def on_user_select(event=None):
@@ -598,6 +626,23 @@ def export_to_excel(user_id=None):
     
     df = pd.DataFrame(data, columns=columns_list)
     df.to_excel(file_name, index=False, engine='openpyxl')
+
+def save_settings(settings, filename="settings.json"):
+    with open(filename, "w") as f:
+        json.dump(settings, f)
+
+def load_settings(filename="settings.json"):
+    try:
+        with open(filename, "r") as f:
+            settings = json.load(f)
+    except FileNotFoundError:
+        # 기본 설정을 반환 (파일이 없을 경우)
+        settings = {"font_size": 12}
+    return settings
+
+def on_closing():
+    save_settings(settings)
+    root.destroy()
 
 search_frame = tk.Frame(root)
 search_frame.grid(row=0, column=0, columnspan=5, pady=1, sticky='w')  # 상단 좌측에 배치
@@ -652,6 +697,9 @@ treeview_users.bind("<Double-1>", on_user_select)
 
 # 시작 시 사용자 목록 읽기
 read_users_gui()
+
+# config 저장
+root.protocol("WM_DELETE_WINDOW", on_closing)
 
 # GUI 루프 시작
 root.mainloop()
