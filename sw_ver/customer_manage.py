@@ -71,10 +71,10 @@ def create_menu(root, all_widgets):
     root.config(menu=menu_bar)
     
     settings_menu = tk.Menu(menu_bar, tearoff=0)
-    menu_bar.add_cascade(label="설정", menu=settings_menu)
+    menu_bar.add_cascade(label="추가기능", menu=settings_menu)
     
     font_menu = tk.Menu(settings_menu, tearoff=0)
-    settings_menu.add_cascade(label="글씨 크기", menu=font_menu)
+    settings_menu.add_cascade(label="글꼴", menu=font_menu)
 
     # 퍼센트 항목 추가
     percent_buttons = [100, 110, 120, 130, 140, 150]
