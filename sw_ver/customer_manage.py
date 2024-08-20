@@ -101,8 +101,34 @@ def validate_hyphen(input_value):
 def create_field_entries(window):
     """필드 및 라벨 설정을 함수화하여 중복 제거."""
     labels_and_fields = {}
+    special_entries = {}
     window_widgets = []
     
+    def open_sessions(window):
+        create_window = tk.Toplevel(window)
+        create_window.title("상세")
+        create_window.geometry("800x600")  # 새 창 크기 설정
+
+        sessions_entry = labels_and_fields.get("회기 수").get()
+        num_sessions = int(sessions_entry)
+
+        # 테이블을 위한 프레임 생성
+        table_frame = tk.Frame(create_window)
+        table_frame.pack(pady=10)
+
+        # 테이블 헤더 생성
+        headers = ["회기", "상담 날짜", "상담 내용"]
+        for col, header in enumerate(headers):
+            label = tk.Label(table_frame, text=header, borderwidth=1, relief="solid")
+            label.grid(row=0, column=col, padx=5, pady=5)
+
+        # 세션에 따라 행 생성
+        for row in range(1, num_sessions + 1):
+            for col in range(3):  # 3열
+                entry = tk.Entry(table_frame, borderwidth=1, relief="solid")
+                entry.grid(row=row, column=col, padx=5, pady=5)
+        
+
     def calculate_age():
         try:
             """생년월일을 입력받아 나이를 계산합니다."""
@@ -136,7 +162,11 @@ def create_field_entries(window):
     for header in headers:
         if header in ["ID"]:
             continue
-        if header in ["회기 수", "상담시작일", "시작연도", "상담종료일", "종료연도"]:
+        elif header in ["회기 수"]:
+            entry = tk.Entry(window, width=10, validate="key", validatecommand=(window.register(validate_integer), "%P"))
+            session_button = tk.Button(window, text="상세", command=lambda: open_sessions(window))
+            special_entries[header] = session_button
+        elif header in ["상담시작일", "시작연도", "상담종료일", "종료연도"]:
             entry = tk.Entry(window, width=10, validate="key", validatecommand=(window.register(validate_integer), "%P"))
         elif header in ["시작월", "시작일", "종료월", "종료일"]:
             entry = tk.Entry(window, width=5, validate="key", validatecommand=(window.register(validate_integer), "%P"))
@@ -184,9 +214,9 @@ def create_field_entries(window):
     # 메뉴바 생성
     create_menu(window, window_widgets)  # Pass the widget list to create_menu
     
-    return labels_and_fields
+    return labels_and_fields, special_entries
 
-def grid_field_entries(labels_and_fields, window):
+def grid_field_entries(labels_and_fields, special_entries, window):
     """필드 및 라벨의 그리드를 설정."""
     row = 0
     for label_text, entry in labels_and_fields.items():
@@ -240,8 +270,13 @@ def grid_field_entries(labels_and_fields, window):
             row += 1
         else:
             tk.Label(window, text=label_text).grid(row=row, column=0, padx=10, pady=5, sticky='ew')
-            if label_text == "이름" or label_text == "나이" or label_text == "회기 수":
+            if label_text == "이름" or label_text == "나이":
                 entry.grid(row=row, column=1, padx=1, pady=5, sticky='w')
+                row += 1
+            elif label_text == "회기 수":
+                session_button = special_entries[label_text]
+                entry.grid(row=row, column=1, padx=1, pady=5, sticky='w')
+                session_button.grid(row=row, column=2, padx=1, pady=5, sticky='w')
                 row += 1
             else:
                 entry.grid(row=row, column=1, columnspan=20, padx=1, pady=5, sticky='w')
@@ -264,6 +299,8 @@ def populate_fields(entries, user_data):
                     gender_var.set("남")  # 남성 선택
                 elif label in ["여자"]:
                     gender_var.set("여")  # 여성 선택
+        elif isinstance(entry, tk.Button):
+            pass
         else:
             if label in ["나이"]:
                 entry.config(state=tk.NORMAL)  # Enable editing
@@ -410,8 +447,8 @@ def open_create_user_window():
     create_window.title("신규 생성")
     create_window.geometry("800x600")  # 새 창 크기 설정
 
-    entries = create_field_entries(create_window)
-    grid_field_entries(entries, create_window)
+    entries, special_entries = create_field_entries(create_window)
+    grid_field_entries(entries, special_entries, create_window)
 
     def save_new_user():
         values = {
@@ -432,8 +469,8 @@ def open_update_window(user_id):
     update_window.title("편집")
     update_window.geometry("800x600")  # 새 창 크기 설정
 
-    entries = create_field_entries(update_window)
-    grid_field_entries(entries, update_window)
+    entries, special_entries = create_field_entries(update_window)
+    grid_field_entries(entries, special_entries, update_window)
 
     # 기존 데이터로 필드 채우기
     populate_fields(entries, user_data)
