@@ -97,21 +97,20 @@ def update_customer(customer_id, updated_name, updated_phone, updated_email, upd
 
 
 def get_customer_by_id(customer_id):
-    query = """SELECT id, name, birth_year, birth_month, birth_day, age, phone, email, address, gender,
-                      session_start_date, session_end_date, presenting_problem, session_count, special_notes
-               FROM customers WHERE id = ?"""
-    try:
-        cursor.execute(query, (customer_id,))
-        result = cursor.fetchone()
-        if result:
-            return result  # (id, name, birth_year, birth_month, birth_day, age, phone, email, address, gender, session_start_date, session_end_date, presenting_problem, session_count, special_notes)
-        else:
-            print(f"No customer found with ID: {customer_id}")  # 디버깅 출력
-            return None
-    except Exception as e:
-        print(f"Error retrieving customer info: {e}")  # 오류 출력
-        return None
-
+    """주어진 ID로 고객 정보를 조회하는 함수입니다."""
+    # 데이터베이스 연결 및 쿼리 실행
+    conn = sqlite3.connect('database.db')  # 데이터베이스 파일명을 적절히 변경하세요
+    cursor = conn.cursor()
+    
+    cursor.execute("""
+        SELECT * FROM customers
+        WHERE id = ?
+    """, (customer_id,))
+    
+    customer = cursor.fetchone()
+    conn.close()
+    
+    return customer
 
 
 def get_customer_id_by_info(name, phone, email, address):

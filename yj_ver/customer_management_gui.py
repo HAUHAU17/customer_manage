@@ -7,7 +7,7 @@ import os
 
 # Database interaction functions (imported from another module)
 from sql import add_customer, get_customers, delete_customer, update_customer, close_connection, get_customer_by_id, validate_birthdate, load_customers
-from customer_tab import create_customer_tab 
+from customer_tab import create_customer_window
 
 root = tk.Tk()
 root.title("고객 관리 프로그램")
@@ -20,15 +20,6 @@ notebook = ttk.Notebook(root)
 notebook.pack(expand=1, fill='both')
 
 tab_names = {}
-
-def open_customer_tab(customer_id, name, phone, email, address, gender,
-                      session_start_date, session_end_date, presenting_problem,
-                      session_count, special_notes, birth_year, birth_month, birth_day, age):
-    create_customer_tab(notebook, tab_names, customer_id, name, phone, email, address, gender,
-                        session_start_date, session_end_date, presenting_problem,
-                        session_count, special_notes, birth_year, birth_month, birth_day, age)
-
-
 
 def calculate_age(year, month, day):
     birthdate = datetime(year, month, day)
@@ -108,25 +99,14 @@ def delete_selected_customer():
         delete_customer(customer_id)
         load_customers(treeview_customers, get_customers, query="")
 
-def show_customer_info(event):
-    selected_item = treeview_customers.selection()
-    if selected_item:
-        customer_values = treeview_customers.item(selected_item)['values']
-        if len(customer_values) >= 1:  # ID를 가져오는 경우, 최소 1개 값이 있어야 합니다.
-            customer_id = customer_values[0]  # ID를 올바르게 추출합니다.
+def on_customer_double_click(event):
+    """Treeview에서 고객 항목을 더블클릭했을 때 호출되는 함수입니다."""
+    item_id = treeview_customers.selection()[0]  # 선택된 항목의 ID를 가져옵니다
+    item_values = treeview_customers.item(item_id, 'values')  # 항목의 값을 가져옵니다
+    customer_id = item_values[0]  # assuming the first value is the customer_id
+    create_customer_window(customer_id, treeview_customers)
 
-            # 모든 정보 가져오기
-            all_info = get_customer_by_id(customer_id)
-            if all_info:
-                # 반환값의 수에 맞게 변수에 저장합니다.
-                (customer_id, name, birth_year, birth_month, birth_day, age, phone, email, address, gender,
-                 session_start_date, session_end_date, presenting_problem, session_count, special_notes) = all_info
 
-                # 탭 생성
-                create_customer_tab(notebook, tab_names, customer_id, name, phone, email, address, gender,
-                                    session_start_date, session_end_date, presenting_problem,
-                                    session_count, special_notes, birth_year, birth_month, birth_day, age, treeview_customers)
-                
 
 def search_customers():
     search_term = entry_search.get()
@@ -187,7 +167,7 @@ treeview_customers.column("Email", width=150, anchor="w")
 treeview_customers.column("Address", width=200, anchor="w")
 
 treeview_customers.pack(padx=10, pady=10, fill="both", expand=True)
-treeview_customers.bind("<Double-1>", show_customer_info)
+treeview_customers.bind("<Double-1>", on_customer_double_click)
 entry_search.focus()
 load_customers(treeview_customers, get_customers, query="")
 
@@ -324,7 +304,9 @@ tab_add_customer.grid_columnconfigure(1, weight=1)
 tab_add_customer.grid_columnconfigure(3, weight=1)
 tab_add_customer.grid_columnconfigure(4, weight=1)
 tab_add_customer.grid_columnconfigure(5, weight=1)
-  
+
+treeview_customers.bind("<Double-1>", on_customer_double_click)
+
 load_customers(treeview_customers, get_customers, query="")
 
 DEFAULT_FONT_SIZE = 10
