@@ -81,6 +81,11 @@ def create_menu(root, all_widgets):
     for percent in percent_buttons:
         font_menu.add_command(label=f"{percent}%", command=lambda p=percent: set_font_size(p, all_widgets))
 
+def update_age(year, month, day):
+    today = datetime.today()
+    age = today.year - year - ((today.month, today.day) < (month, day))
+    return age
+
 def validate_integer(input_value):
     """정수만 허용하는 검증 함수"""
     return input_value.isdigit() or input_value == ""
@@ -178,14 +183,24 @@ def create_field_entries(window):
     
     # 메뉴바 생성
     create_menu(window, window_widgets)  # Pass the widget list to create_menu
-
+    
     return labels_and_fields
 
 def grid_field_entries(labels_and_fields, window):
     """필드 및 라벨의 그리드를 설정."""
     row = 0
     for label_text, entry in labels_and_fields.items():
-        if label_text == "생년월일" or label_text == "성별" or label_text == "상담시작일" or label_text == "상담종료일":
+        if label_text == "특이사항" or label_text == "호소문제":
+            tk.Label(window, text=label_text).grid(row=row, column=0, padx=10, pady=5, sticky='ew')
+            scrollbar = tk.Scrollbar(window, command=entry.yview)
+            entry.config(yscrollcommand=scrollbar.set)
+
+            # 특이사항 필드의 프레임과 텍스트 및 스크롤 바를 배치
+            column_length = 20
+            entry.grid(row=row, column=1, columnspan=column_length, padx=1, pady=5, sticky="w")
+            scrollbar.grid(row=row, column=column_length+1, pady=5, sticky="ns")
+            row += 1
+        elif label_text == "생년월일" or label_text == "성별" or label_text == "상담시작일" or label_text == "상담종료일":
             # Handling the special case for "생년월일", "성별", "상담시작일", "상담종료일"
             tk.Label(window, text=label_text).grid(row=row, column=0, padx=10, pady=5, sticky='ew')
         elif label_text == "년":
@@ -298,7 +313,7 @@ def save_user_data(values, user_id=None):
         year = values.get("년", "").strip()
         month = values.get("월", "").strip()
         day = values.get("일", "").strip()
-
+        
         # 기본값 설정
         if not year or not month or not day:
             birth = "-"
@@ -446,6 +461,39 @@ def open_update_window(user_id):
 def read_users_gui(search_query=None):
     treeview_users.delete(*treeview_users.get_children())
     rows = sql.read_users(search_query)  # 검색 쿼리를 전달
+    
+    for row in rows:
+        formatted_row = list(row)
+        age = update_age(formatted_row[3], formatted_row[4], formatted_row[5])
+        sql.update_user(
+                            formatted_row[0],
+                            name=formatted_row[1],
+                            birth=formatted_row[2],
+                            year=formatted_row[3],
+                            month=formatted_row[4],
+                            day=formatted_row[5],
+                            age=age,
+                            email=formatted_row[7],
+                            gender=formatted_row[8],
+                            male=formatted_row[9],
+                            female=formatted_row[10],
+                            phone=formatted_row[11],
+                            address=formatted_row[12],
+                            consultation_start=formatted_row[13],
+                            start_year=formatted_row[14],
+                            start_month=formatted_row[15],
+                            start_day=formatted_row[16],
+                            consultation_end=formatted_row[17],
+                            end_year=formatted_row[18],
+                            end_month=formatted_row[19],
+                            end_day=formatted_row[20],
+                            issue=formatted_row[21],
+                            sessions=formatted_row[22],
+                            notes=formatted_row[23]
+                        )
+    
+    rows = sql.read_users(search_query)  # 검색 쿼리를 전달
+    
     for row in rows:
         formatted_row = list(row)
         for i, header in enumerate(headers):
