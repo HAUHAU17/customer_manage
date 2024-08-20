@@ -13,30 +13,7 @@ root = tk.Tk()
 root.title("고객 관리 프로그램")
 root.geometry("1000x600")  # Set default window size
 
-DEFAULT_FONT_SIZE = 10
-CONFIG_FILE = "config.json"
 
-def load_font_size():
-    """ 설정 파일에서 폰트 크기를 불러옵니다. """
-    if os.path.exists(CONFIG_FILE):
-        try:
-            with open(CONFIG_FILE, "r") as file:
-                config = json.load(file)
-                return config.get("font_size", DEFAULT_FONT_SIZE)
-        except (json.JSONDecodeError, ValueError):
-            # JSON 형식 오류나 기타 오류 발생 시 기본 폰트 크기 사용
-            return DEFAULT_FONT_SIZE
-    return DEFAULT_FONT_SIZE
-
-def save_font_size(size):
-    """ 설정 파일에 폰트 크기를 저장합니다. """
-    config = {"font_size": size}
-    with open(CONFIG_FILE, "w") as file:
-        json.dump(config, file)
-
-
-# 초기 폰트 크기 불러오기
-current_size = load_font_size()
 
 
 notebook = ttk.Notebook(root)
@@ -81,16 +58,20 @@ def save_customer():
     session_start_date = entry_session_start.get_date().strftime('%Y-%m-%d') if entry_session_start.get_date() else ''
     session_end_date = entry_session_end.get_date().strftime('%Y-%m-%d') if entry_session_end.get_date() else ''
     session_count = entry_session_count.get().strip() or ''
-    
+    presenting_problem = entry_presenting_problem.get("1.0", tk.END).strip() or ''
+    special_notes = entry_special_notes.get("1.0", tk.END).strip() or ''
+
     if birth_year and birth_month and birth_day:
         if not validate_birthdate(birth_year, birth_month, birth_day):
             messagebox.showwarning("잘못된 입력", "올바른 생년월일을 입력하십시오.")
             return
 
+    
+
     # 고객 추가 함수 호출
     add_customer(name, birth_year, birth_month, birth_day, age, phone, email, address, gender,
-                 session_start_date, session_end_date, None, session_count, None)
-
+                 session_start_date, session_end_date, presenting_problem, session_count, special_notes)
+    
     messagebox.showinfo("저장 완료", "고객 정보가 저장되었습니다.")
     clear_entries()
     load_customers(treeview_customers, get_customers, query="")
@@ -161,50 +142,6 @@ def close_app():
 
 root.protocol("WM_DELETE_WINDOW", close_app)
 
-# 메뉴바 생성
-menubar = tk.Menu(root)
-root.config(menu=menubar)
-
-# '설정' 메뉴 추가
-settings_menu = tk.Menu(menubar, tearoff=0)
-menubar.add_cascade(label="설정", menu=settings_menu)
-
-
-def set_font_size(size):
-    global current_size
-    # 현재 선택된 폰트 크기 업데이트
-    current_size = size
-    save_font_size(size)
-    
-    # 기본 폰트 크기 변경
-    base_font.configure(size=size)
-    
-    # Treeview의 전체 스타일 변경
-    style = ttk.Style()
-    style.configure("Treeview.Heading", font=(base_font.cget("family"), size))
-    style.configure("Treeview", font=(base_font.cget("family"), size))
-
-    # 다른 위젯의 폰트 크기 변경
-    for widget in root.winfo_children():
-        if hasattr(widget, 'configure'):
-            try:
-                widget.configure(font=base_font)
-            except tk.TclError:
-                pass  # 폰트를 지원하지 않는 위젯은 무시
-    
-    update_font_menu()
-
-def update_font_menu():
-    """ 현재 폰트 크기에 맞는 메뉴 항목에 체크 표시를 업데이트합니다. """
-    for size_label, size in sizes:
-        if size == current_size:
-            font_menu.entryconfig(size_label, label=f"{size_label} ✔")
-        else:
-            font_menu.entryconfig(size_label, label=size_label)
-
-# 기본 폰트 설정
-base_font = font.nametofont("TkDefaultFont")
-base_font.configure(family="Malgun Gothic", size=current_size)
 
 # 첫 번째 탭: 전체 고객
 tab_all_customers = ttk.Frame(notebook)
@@ -390,17 +327,88 @@ tab_add_customer.grid_columnconfigure(5, weight=1)
   
 load_customers(treeview_customers, get_customers, query="")
 
+DEFAULT_FONT_SIZE = 10
+CONFIG_FILE = "config.json"
+
+def load_font_size():
+    """ 설정 파일에서 폰트 크기를 불러옵니다. """
+    if os.path.exists(CONFIG_FILE):
+        try:
+            with open(CONFIG_FILE, "r") as file:
+                config = json.load(file)
+                return config.get("font_size", DEFAULT_FONT_SIZE)
+        except (json.JSONDecodeError, ValueError):
+            return DEFAULT_FONT_SIZE
+    return DEFAULT_FONT_SIZE
+
+def save_font_size(size):
+    """ 설정 파일에 폰트 크기를 저장합니다. """
+    config = {"font_size": size}
+    with open(CONFIG_FILE, "w") as file:
+        json.dump(config, file)
+
+def set_font_size(size):
+    global current_size
+    current_size = size
+    save_font_size(size)
+    
+    base_font.configure(size=size)
+    
+    style = ttk.Style()
+    style.configure("Treeview.Heading", font=(base_font.cget("family"), size))
+    style.configure("Treeview", font=(base_font.cget("family"), size))
+
+    for widget in root.winfo_children():
+        if hasattr(widget, 'configure'):
+            try:
+                widget.configure(font=base_font)
+            except tk.TclError:
+                pass
+    
+    update_font_menu()
+
+def update_font_menu():
+
+    for size, index in font_menu_items.items():
+        if size in size_label_dict:
+            if size == current_size:
+                font_menu.entryconfig(index, label=f"{size_label_dict[size]} ✔")
+            else:
+                font_menu.entryconfig(index, label=size_label_dict[size])
+
+# 초기 폰트 크기 불러오기
+current_size = load_font_size()
+
+# 기본 폰트 설정
+base_font = font.nametofont("TkDefaultFont")
+base_font.configure(family="Malgun Gothic", size=current_size)
+
+# 메뉴바 생성
+menubar = tk.Menu(root)
+root.config(menu=menubar)
+
+# '설정' 메뉴 추가
+settings_menu = tk.Menu(menubar, tearoff=0)
+menubar.add_cascade(label="설정", menu=settings_menu)
 
 # '글자 크기 조절' 메뉴 추가
 font_menu = tk.Menu(settings_menu, tearoff=0)
-sizes = [("90%", 9), ("100%", 10), ("110%", 11), ("120%", 12), ("130%", 13), ("140%", 14)]
-for size_label, size in sizes:
-    font_menu.add_command(
-        label=size_label,
-        command=lambda s=size: set_font_size(s)
-    )
-settings_menu.add_cascade(label="글자 크기 조절", menu=font_menu)
+settings_menu.add_cascade(label="폰트 크기", menu=font_menu)
 
-# 초기 폰트 메뉴 업데이트
+# 메뉴 항목과 폰트 크기 설정
+sizes = [("90%", 9), ("100%", 10), ("110%", 11), ("120%", 12), ("130%", 13), ("140%", 14)]
+sizes_dict = dict(sizes)  # 레이블을 키로 사용
+size_label_dict = {size: label for label, size in sizes}  # 크기를 키로 사용
+
+# 메뉴 항목 추가
+font_menu_items = {}
+for index, (size_label, size) in enumerate(sizes):
+    item_id = font_menu.add_command(label=size_label, command=lambda s=size: set_font_size(s))
+    font_menu_items[size] = index  # 메뉴 항목의 인덱스를 값으로 저장
+
+# 메뉴 업데이트
 update_font_menu()
+# Tkinter 메인 루프 시작
+
+
 root.mainloop()
