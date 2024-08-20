@@ -524,7 +524,7 @@ label_search.grid(row=0, column=0, padx=10, pady=10, sticky='e')
 search_field_var = tk.StringVar(value="이름")  # 기본 검색 필드를 이름으로 설정
 
 # 드롭다운 메뉴 (Combobox)로 필드 선택
-option_menu = ttk.Combobox(search_frame, textvariable=search_field_var, values=headers, width=20)
+option_menu = ttk.Combobox(search_frame, textvariable=search_field_var, values=viewonly_headers, width=20)
 option_menu.grid(row=0, column=1, padx=10, pady=10, sticky='w')
 
 # 검색 입력 필드
