@@ -17,13 +17,13 @@ custom_font = font.Font(size=BASE_FONT_SIZE)
 
 # Treeview 설정
 headers = [
-    "ID", "이름", "생년월일", "년", "월", "일", "나이", "메일", "성별", "남자", "여자", "전화번호", "주소", "상담시작일", "시작연도", "시작월", "시작일", "상담종료일", "종료연도", "종료월", "종료일", "호소문제-1", "호소문제-2", "회기 수", "특이사항"
+    "ID", "이름", "생년월일", "년", "월", "일", "나이", "메일", "성별", "남자", "여자", "전화번호", "주소", "상담시작일", "시작연도", "시작월", "시작일", "상담종료일", "종료연도", "종료월", "종료일", "호소문제", "회기 수", "특이사항"
 ]
 viewonly_headers = [
     "ID", "이름", "생년월일", "나이", "메일", "성별", "전화번호", "주소", "상담시작일", "상담종료일", "회기 수"
 ]
 export_headers = [
-    "ID", "이름", "생년월일", "나이", "메일", "성별", "전화번호", "주소", "상담시작일", "상담종료일", "호소문제-1", "호소문제-2", "회기 수", "특이사항"
+    "ID", "이름", "생년월일", "나이", "메일", "성별", "전화번호", "주소", "상담시작일", "상담종료일", "호소문제", "회기 수", "특이사항"
 ]
 treeview_users = ttk.Treeview(root, columns=viewonly_headers, show='headings')
 
@@ -156,9 +156,11 @@ def create_field_entries(window):
                 entry.config(state=tk.DISABLED)  # Disable editing
         elif header in ["특이사항"]:
             entry = tk.Text(window, height=10, width=60)
+        elif header in ["호소문제"]:
+            entry = tk.Text(window, height=3, width=60)
         elif header in ["메일"]:
             entry = tk.Entry(window, width=30, validate="key", validatecommand=(window.register(validate_hyphen), "%P"))
-        elif header in ["주소", "호소문제-1", "호소문제-2"]:
+        elif header in ["주소"]:
             entry = tk.Entry(window, width=60, validate="key", validatecommand=(window.register(validate_hyphen), "%P"))
         elif header in ["성별", "남자", "여자"]:
             if header in ["남자"]:
@@ -350,8 +352,7 @@ def save_user_data(values, user_id=None):
                     end_year = end_year,
                     end_month = end_month,
                     end_day = end_day,
-                    issue_1=values.get("호소문제-1", "") or "-",
-                    issue_2=values.get("호소문제-2", "") or "-",
+                    issue=values.get("호소문제", ""),
                     sessions=sessions,
                     notes=values.get("특이사항", "")
                 )
@@ -378,8 +379,7 @@ def save_user_data(values, user_id=None):
                     end_year = end_year,
                     end_month = end_month,
                     end_day = end_day,
-                    issue_1=values.get("호소문제-1", "") or "-",
-                    issue_2=values.get("호소문제-2", "") or "-",
+                    issue=values.get("호소문제", ""),
                     sessions=sessions,
                     notes=values.get("특이사항", "")
                 )
