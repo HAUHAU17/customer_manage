@@ -2,6 +2,8 @@ import tkinter as tk
 from tkinter import ttk, messagebox, font
 from datetime import datetime
 from tkcalendar import DateEntry 
+import json
+import os
 
 # Database interaction functions (imported from another module)
 from sql import add_customer, get_customers, delete_customer, update_customer, close_connection, get_customer_by_id, validate_birthdate, load_customers
@@ -11,9 +13,31 @@ root = tk.Tk()
 root.title("고객 관리 프로그램")
 root.geometry("1000x600")  # Set default window size
 
-# 기본 글꼴 설정
-base_font = font.nametofont("TkDefaultFont")
-base_font.configure(family="Malgun Gothic", size=10) 
+DEFAULT_FONT_SIZE = 10
+CONFIG_FILE = "config.json"
+
+def load_font_size():
+    """ 설정 파일에서 폰트 크기를 불러옵니다. """
+    if os.path.exists(CONFIG_FILE):
+        try:
+            with open(CONFIG_FILE, "r") as file:
+                config = json.load(file)
+                return config.get("font_size", DEFAULT_FONT_SIZE)
+        except (json.JSONDecodeError, ValueError):
+            # JSON 형식 오류나 기타 오류 발생 시 기본 폰트 크기 사용
+            return DEFAULT_FONT_SIZE
+    return DEFAULT_FONT_SIZE
+
+def save_font_size(size):
+    """ 설정 파일에 폰트 크기를 저장합니다. """
+    config = {"font_size": size}
+    with open(CONFIG_FILE, "w") as file:
+        json.dump(config, file)
+
+
+# 초기 폰트 크기 불러오기
+current_size = load_font_size()
+
 
 notebook = ttk.Notebook(root)
 notebook.pack(expand=1, fill='both')
@@ -145,32 +169,42 @@ root.config(menu=menubar)
 settings_menu = tk.Menu(menubar, tearoff=0)
 menubar.add_cascade(label="설정", menu=settings_menu)
 
+
 def set_font_size(size):
-    # 모든 기본 폰트의 크기 변경
+    global current_size
+    # 현재 선택된 폰트 크기 업데이트
+    current_size = size
+    save_font_size(size)
+    
+    # 기본 폰트 크기 변경
     base_font.configure(size=size)
     
-    # 모든 위젯의 폰트 크기를 다시 설정 (font 옵션이 있는 위젯만)
+    # Treeview의 전체 스타일 변경
+    style = ttk.Style()
+    style.configure("Treeview.Heading", font=(base_font.cget("family"), size))
+    style.configure("Treeview", font=(base_font.cget("family"), size))
+
+    # 다른 위젯의 폰트 크기 변경
     for widget in root.winfo_children():
         if hasattr(widget, 'configure'):
             try:
                 widget.configure(font=base_font)
             except tk.TclError:
                 pass  # 폰트를 지원하지 않는 위젯은 무시
-    # Treeview의 헤더와 항목 폰트 크기 변경
-    tree_font = font.Font(family="Malgun Gothic", size=size)
-    for col in treeview_customers["columns"]:
-        treeview_customers.heading(col, font=tree_font)  # 헤더 폰트 크기 변경
-    treeview_customers.tag_configure('custom_font', font=tree_font)
-    for item in treeview_customers.get_children():
-        treeview_customers.item(item, tags=('custom_font',))
+    
+    update_font_menu()
 
-# '글자 크기 조절' 메뉴 추가
-font_menu = tk.Menu(settings_menu, tearoff=0)
-# 포인트 단위로 절대 크기 설정
-for size_label, size in [("100%", 10), ("110%", 11), ("120%", 12), ("130%", 13), ("140%", 14), ("150%", 15)]:
-    font_menu.add_command(label=size_label, command=lambda s=size: set_font_size(s))
-settings_menu.add_cascade(label="글자 크기 조절", menu=font_menu)
+def update_font_menu():
+    """ 현재 폰트 크기에 맞는 메뉴 항목에 체크 표시를 업데이트합니다. """
+    for size_label, size in sizes:
+        if size == current_size:
+            font_menu.entryconfig(size_label, label=f"{size_label} ✔")
+        else:
+            font_menu.entryconfig(size_label, label=size_label)
 
+# 기본 폰트 설정
+base_font = font.nametofont("TkDefaultFont")
+base_font.configure(family="Malgun Gothic", size=current_size)
 
 # 첫 번째 탭: 전체 고객
 tab_all_customers = ttk.Frame(notebook)
@@ -195,25 +229,25 @@ treeview_customers.heading("ID", text="ID")
 treeview_customers.heading("Name", text="이름")
 treeview_customers.heading("Birthdate", text="생년월일")
 treeview_customers.heading("Age", text="나이")
-treeview_customers.heading("Phone", text="전화번호")
-treeview_customers.heading("Email", text="이메일")
-treeview_customers.heading("Address", text="주소")
 treeview_customers.heading("Gender", text="성별")
+treeview_customers.heading("Phone", text="전화번호")
+treeview_customers.heading("Session Count", text="회기수")
 treeview_customers.heading("Session Start", text="상담 시작일")
 treeview_customers.heading("Session End", text="상담 종료일")
-treeview_customers.heading("Session Count", text="회기수")
+treeview_customers.heading("Email", text="이메일")
+treeview_customers.heading("Address", text="주소")
 
-treeview_customers.column("ID", width=50, anchor="w")
-treeview_customers.column("Name", width=150, anchor="w")
-treeview_customers.column("Birthdate", width=100, anchor="w")
-treeview_customers.column("Age", width=50, anchor="w")
-treeview_customers.column("Phone", width=150, anchor="w")
+treeview_customers.column("ID", width=30, anchor="center")
+treeview_customers.column("Name", width=60, anchor="center")
+treeview_customers.column("Birthdate", width=100, anchor="center")
+treeview_customers.column("Age", width=30, anchor="center")
+treeview_customers.column("Gender", width=30, anchor="center")
+treeview_customers.column("Phone", width=120, anchor="center")
+treeview_customers.column("Session Count", width=30, anchor="center")
+treeview_customers.column("Session Start", width=85, anchor="center")
+treeview_customers.column("Session End", width=85, anchor="center")
 treeview_customers.column("Email", width=150, anchor="w")
 treeview_customers.column("Address", width=200, anchor="w")
-treeview_customers.column("Gender", width=80, anchor="w")
-treeview_customers.column("Session Start", width=100, anchor="w")
-treeview_customers.column("Session End", width=100, anchor="w")
-treeview_customers.column("Session Count", width=80, anchor="w")
 
 treeview_customers.pack(padx=10, pady=10, fill="both", expand=True)
 treeview_customers.bind("<Double-1>", show_customer_info)
@@ -353,7 +387,20 @@ tab_add_customer.grid_columnconfigure(1, weight=1)
 tab_add_customer.grid_columnconfigure(3, weight=1)
 tab_add_customer.grid_columnconfigure(4, weight=1)
 tab_add_customer.grid_columnconfigure(5, weight=1)
-
+  
 load_customers(treeview_customers, get_customers, query="")
 
+
+# '글자 크기 조절' 메뉴 추가
+font_menu = tk.Menu(settings_menu, tearoff=0)
+sizes = [("90%", 9), ("100%", 10), ("110%", 11), ("120%", 12), ("130%", 13), ("140%", 14)]
+for size_label, size in sizes:
+    font_menu.add_command(
+        label=size_label,
+        command=lambda s=size: set_font_size(s)
+    )
+settings_menu.add_cascade(label="글자 크기 조절", menu=font_menu)
+
+# 초기 폰트 메뉴 업데이트
+update_font_menu()
 root.mainloop()
