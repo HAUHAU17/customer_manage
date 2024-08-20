@@ -102,8 +102,24 @@ def fetch_users():
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM users")  # 'users'는 데이터베이스 테이블 이름
     rows = cursor.fetchall()
-    conn.close()
     return rows
+
+def fetch_users_by_id(user_id):
+    """주어진 사용자 ID에 해당하는 사용자 데이터를 가져오는 함수"""
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+    rows = cursor.fetchall()
+    return rows
+
+def fetch_user_name_by_id(user_id):
+    """주어진 사용자 ID로 사용자 이름을 가져오는 함수"""
+    cursor = conn.cursor()
+    cursor.execute("SELECT name FROM users WHERE id = ?", (user_id,))
+    result = cursor.fetchone()  # fetchone()은 하나의 행을 반환
+    if result:
+        return result[0]  # 첫 번째 열 (이름) 반환
+    else:
+        return None
 
 def close_connection():
     conn.close()

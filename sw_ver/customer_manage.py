@@ -12,7 +12,7 @@ root.title("고객 관리 프로그램")
 root.geometry("1400x800")  # 메인 창 초기 크기 설정
 
 # 기본 폰트 크기
-BASE_FONT_SIZE = 12
+BASE_FONT_SIZE = 10
 custom_font = font.Font(size=BASE_FONT_SIZE)
 
 # Treeview 설정
@@ -47,13 +47,12 @@ treeview_users.grid(row=2, column=0, columnspan=5, padx=10, pady=10, sticky='nse
 
 gender_var = tk.StringVar()
 
-def update_font_size(percent):
+def update_font_size(percent, all_widgets):
     size = int(BASE_FONT_SIZE * percent / 100)
     global custom_font
     custom_font = font.Font(size=size)
 
     # 적용할 위젯 리스트
-    all_widgets = [entry_search, button_search, button_show_all, button_create, button_update, button_delete, export_button]
     for widget in all_widgets:
         widget.config(font=custom_font)
     
@@ -61,10 +60,10 @@ def update_font_size(percent):
     style = ttk.Style()
     style.configure("Treeview", font=custom_font)
 
-def set_font_size(percent):
-    update_font_size(percent)
+def set_font_size(percent, all_widgets):
+    update_font_size(percent, all_widgets)
 
-def create_menu(root):
+def create_menu(root, all_widgets):
     menu_bar = tk.Menu(root)
     root.config(menu=menu_bar)
     
@@ -74,7 +73,7 @@ def create_menu(root):
     # 퍼센트 항목 추가
     percent_buttons = [100, 110, 120, 130, 140, 150]
     for percent in percent_buttons:
-        font_menu.add_command(label=f"{percent}%", command=lambda p=percent: set_font_size(p))
+        font_menu.add_command(label=f"{percent}%", command=lambda p=percent: set_font_size(p, all_widgets))
 
 def validate_integer(input_value):
     """정수만 허용하는 검증 함수"""
@@ -91,6 +90,7 @@ def validate_hyphen(input_value):
 def create_field_entries(window):
     """필드 및 라벨 설정을 함수화하여 중복 제거."""
     labels_and_fields = {}
+    window_widgets = []
     
     def calculate_age():
         try:
@@ -166,6 +166,11 @@ def create_field_entries(window):
             entry = tk.Entry(window, width=10, validate="key", validatecommand=(window.register(validate_hyphen), "%P"))
         
         labels_and_fields[header] = entry
+        window_widgets.append(entry)
+    
+    # 메뉴바 생성
+    create_menu(window, window_widgets)  # Pass the widget list to create_menu
+
     return labels_and_fields
 
 def grid_field_entries(labels_and_fields, window):
@@ -216,16 +221,20 @@ def populate_fields(entries, user_data):
                 entry.delete("1.0", tk.END)  # 기존 내용을 삭제
                 entry.insert("1.0", user_data[index])  # 텍스트 삽입
             elif isinstance(entry, tk.Radiobutton):
-                if user_data[index] == "남":
-                    gender_var.set("남")  # 남성 선택
-                elif user_data[index] == "여":
-                    gender_var.set("여")  # 여성 선택
+                if user_data[index] == "o":
+                    if label in ["남자"]:
+                        gender_var.set("남")  # 남성 선택
+                    elif label in ["여자"]:
+                        gender_var.set("여")  # 여성 선택
             else:
-                entry.delete(0, tk.END)  # 기존 내용을 삭제
-                entry.insert(0, user_data[index])  # 텍스트 삽입
-                
                 if label in ["나이"]:
-                    entry.config(state=tk.DISABLED) #나이 필드 비활성화
+                    entry.config(state=tk.NORMAL)  # Enable editing
+                    entry.delete(0, tk.END)  # 기존 내용을 삭제
+                    entry.insert(0, user_data[index])  # 텍스트 삽입
+                    entry.config(state=tk.DISABLED) # Disable editing
+                else:
+                    entry.delete(0, tk.END)  # 기존 내용을 삭제
+                    entry.insert(0, user_data[index])  # 텍스트 삽입
 
 def save_user_data(values, user_id=None):
     """사용자 데이터를 저장 또는 업데이트."""
@@ -338,9 +347,9 @@ def open_create_user_window():
         }
         save_user_data(values)
         create_window.destroy()
-
+    
     button_save = tk.Button(create_window, text="저장", command=save_new_user)
-    button_save.grid(row=len(headers), column=5, padx=10, pady=10)
+    button_save.grid(row=len(headers), column=10, padx=5, pady=5)
 
 def open_update_window(user_id):
     user_data = [row for row in sql.read_users() if str(row[0]) == user_id][0]
@@ -357,7 +366,7 @@ def open_update_window(user_id):
 	# 새 창 열릴 때 Name 입력 필드에 포커스
     entry_name = entries["이름"]
     entry_name.focus_set()
-
+    
     def save_updates():
         values = {
             label: (entry.get() if isinstance(entry, tk.Entry) else 
@@ -367,9 +376,12 @@ def open_update_window(user_id):
         }
         save_user_data(values, user_id=user_id)
         update_window.destroy()
+    
+    button_export = tk.Button(update_window, text="상세 출력", command=lambda: export_to_excel(user_id=user_id))
+    button_export.grid(row=len(headers), column=9, padx=5, pady=5)
 
     button_save = tk.Button(update_window, text="저장", command=save_updates)
-    button_save.grid(row=len(headers), column=5, padx=10, pady=10)
+    button_save.grid(row=len(headers), column=10, padx=5, pady=5)
 
 def read_users_gui(search_query=None):
     treeview_users.delete(*treeview_users.get_children())
@@ -398,6 +410,10 @@ def read_users_gui(search_query=None):
         selected_column = [formatted_row[i] for i in indices]
         
         treeview_users.insert("", tk.END, iid=str(row[0]), values=selected_column)
+        
+    # 메뉴바 생성
+    main_widgets = [entry_search, button_search, button_show_all, button_create, button_update, button_delete, export_button]
+    create_menu(root, main_widgets)
 
 def on_user_select(event=None):
     selected_item = treeview_users.selection()
@@ -431,11 +447,18 @@ def show_all_users():
     entry_search.delete(0, tk.END)  # 검색 입력 필드 비우기
     read_users_gui()  # 전체 목록 불러오기
 
-def export_to_excel():
+def export_to_excel(user_id=None):
     """현재 데이터를 엑셀 파일로 내보내는 함수"""
-    data = sql.fetch_users()  # 데이터베이스에서 고객 데이터 가져오기
+    if user_id is None:
+        data = sql.fetch_users()  # 데이터베이스에서 고객 데이터 가져오기
+        file_name = "고객_목록.xlsx"
+    else:
+        data = sql.fetch_users_by_id(user_id)  # 데이터베이스에서 고객 데이터 가져오기
+        user_name = sql.fetch_user_name_by_id(user_id)
+        file_name = user_name + "_정보.xlsx"
+    
     df = pd.DataFrame(data, columns=headers)
-    df.to_excel('고객_목록.xlsx', index=False, engine='openpyxl')
+    df.to_excel(file_name, index=False, engine='openpyxl')
     messagebox.showinfo("정보", "데이터가 엑셀 파일로 내보내졌습니다.")
 
 # 검색 필드 및 드롭다운 메뉴 설정
@@ -473,7 +496,7 @@ button_update.grid(row=0, column=1, padx=10)
 button_delete = tk.Button(button_frame, text="삭제", command=delete_user_gui)
 button_delete.grid(row=0, column=2, padx=10)
 
-export_button = tk.Button(button_frame, text="목록 추출", command=export_to_excel)
+export_button = tk.Button(button_frame, text="목록 출력", command=export_to_excel)
 export_button.grid(row=0, column=3, padx=5, pady=5)
 
 # Bind the Enter key to the search_users function
@@ -488,9 +511,6 @@ treeview_users.bind("<Double-1>", on_user_select)
 
 # 시작 시 사용자 목록 읽기
 read_users_gui()
-
-# 메뉴바 생성
-create_menu(root)
 
 # GUI 루프 시작
 root.mainloop()
