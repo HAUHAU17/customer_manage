@@ -10,9 +10,9 @@ def create_table():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
             birth TEXT,
-            year TEXT,
-            month TEXT,
-            day TEXT,
+            year INTEGER,
+            month INTEGER,
+            day INTEGER,
             age INTEGER NOT NULL,
             email TEXT,
             gender TEXT,
@@ -20,8 +20,14 @@ def create_table():
             female TEXT,
             phone TEXT,
             address TEXT,
-            consultation_start DATE,
-            consultation_end DATE,
+            consultation_start TEXT,
+            start_year INTEGER,
+            start_month INTEGER,
+            start_day INTEGER,
+            consultation_end TEXT,
+            end_year INTEGER,
+            end_month INTEGER,
+            end_day INTEGER,
             issue_1 TEXT,
             issue_2 TEXT,
             sessions INTEGER,
@@ -30,12 +36,12 @@ def create_table():
     ''')
     conn.commit()
 
-def create_user(name, birth, year, month, day, age, email, gender, male, female, phone, address, consultation_start, consultation_end, issue_1, issue_2, sessions, notes):
+def create_user(name, birth, year, month, day, age, email, gender, male, female, phone, address, consultation_start, start_year, start_month, start_day, consultation_end, end_year, end_month, end_day, issue_1, issue_2, sessions, notes):
     c.execute('''
         INSERT INTO users (
-            name, birth, year, month, day, age, email, gender, male, female, phone, address, consultation_start, consultation_end, issue_1, issue_2, sessions, notes
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (name, birth, year, month, day, age, email, gender, male, female, phone, address, consultation_start, consultation_end, issue_1, issue_2, sessions, notes))
+            name, birth, year, month, day, age, email, gender, male, female, phone, address, consultation_start, start_year, start_month, start_day, consultation_end, end_year, end_month, end_day, issue_1, issue_2, sessions, notes
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (name, birth, year, month, day, age, email, gender, male, female, phone, address, consultation_start, start_year, start_month, start_day, consultation_end, end_year, end_month, end_day, issue_1, issue_2, sessions, notes))
     conn.commit()
 
 def build_search_query(search_query):
@@ -61,7 +67,13 @@ def build_search_query(search_query):
         "전화번호": "phone",
         "주소": "address",
         "상담시작일": "consultation_start",
+        "시작연도" : "start_year",
+        "시작월" : "start_month",
+        "시작일" : "start_day",
         "상담종료일": "consultation_end",
+        "종료연도" : "end_year",
+        "종료월" : "end_month",
+        "종료일" : "end_day",
         "호소문제-1": "issue_1",
         "호소문제-1": "issue_2",
         "회기 수": "sessions",
@@ -85,12 +97,12 @@ def read_users(search_query=None):
     c.execute(query, params)
     return c.fetchall()
 
-def update_user(user_id, name, birth, year, month, day, age, email, gender, male, female, phone, address, consultation_start, consultation_end, issue_1, issue_2, sessions, notes):
+def update_user(user_id, name, birth, year, month, day, age, email, gender, male, female, phone, address, consultation_start, start_year, start_month, start_day, consultation_end, end_year, end_month, end_day, issue_1, issue_2, sessions, notes):
     c.execute('''
         UPDATE users
-        SET name = ?, birth = ?, year = ?, month = ?, day = ?, age = ?, email = ?, gender = ?, male = ?, female = ?, phone = ?, address = ?, consultation_start = ?, consultation_end = ?, issue_1 = ?, issue_2 = ?, sessions = ?, notes = ?
+        SET name = ?, birth = ?, year = ?, month = ?, day = ?, age = ?, email = ?, gender = ?, male = ?, female = ?, phone = ?, address = ?, consultation_start = ?, start_year = ?, start_month = ?, start_day = ?, consultation_end = ?, end_year = ?, end_month = ?, end_day = ?, issue_1 = ?, issue_2 = ?, sessions = ?, notes = ?
         WHERE id = ?
-    ''', (name, birth, year, month, day, age, email, gender, male, female, phone, address, consultation_start, consultation_end, issue_1, issue_2, sessions, notes, user_id))
+    ''', (name, birth, year, month, day, age, email, gender, male, female, phone, address, consultation_start, start_year, start_month, start_day, consultation_end, end_year, end_month, end_day, issue_1, issue_2, sessions, notes, user_id))
     conn.commit()
 
 def delete_user(user_id):
@@ -100,14 +112,14 @@ def delete_user(user_id):
 def fetch_users():
     """모든 고객 데이터를 가져오는 함수"""
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM users")  # 'users'는 데이터베이스 테이블 이름
+    cursor.execute("SELECT id, name, birth, age, email, gender, phone, address, consultation_start, consultation_end, sessions FROM users")  # 'users'는 데이터베이스 테이블 이름
     rows = cursor.fetchall()
     return rows
 
 def fetch_users_by_id(user_id):
     """주어진 사용자 ID에 해당하는 사용자 데이터를 가져오는 함수"""
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+    cursor.execute("SELECT id, name, birth, age, email, gender, phone, address, consultation_start, consultation_end, issue_1, issue_2, sessions, notes FROM users WHERE id = ?", (user_id,))
     rows = cursor.fetchall()
     return rows
 
