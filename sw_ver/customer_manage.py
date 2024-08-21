@@ -637,7 +637,7 @@ def load_settings(filename="settings.json"):
             settings = json.load(f)
     except FileNotFoundError:
         # 기본 설정을 반환 (파일이 없을 경우)
-        settings = {"font_size": 12}
+        settings = {"font_size": 100}
     return settings
 
 def on_closing():
