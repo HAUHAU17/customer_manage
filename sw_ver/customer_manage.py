@@ -121,37 +121,107 @@ def validate_hyphen(input_value):
     """"-"만 허용하는 검증 함수"""
     return  input_value!="-"
 
+# 세션 저장 함수
+def save_session_data(session_window, session_data):
+    # 여기에 데이터베이스 저장 로직을 추가하세요.
+    # 예: cursor.execute("INSERT INTO sessions (field1, field2, ...) VALUES (?, ?, ...)", (value1, value2, ...))
+    print("세션 데이터 저장:", session_data)  # 이 부분은 실제로 DB에 저장하는 코드로 대체해야 합니다.
+    messagebox.showinfo("저장 완료", "세션 정보가 저장되었습니다.")
+    session_window.destroy()
+
+# 입력 행 추가 함수
+def add_entry_row(session_window, labels, session_data, row_num, add_button, save_button):
+    entries = []
+    
+    # '회차' 라벨 추가
+    tk.Label(session_window, text=f"{row_num}회기").grid(row=row_num, column=0, padx=10, pady=5)
+
+    for i, label_text in enumerate(labels[1:], start=1):
+        entry = tk.Entry(session_window)
+        entry.grid(row=row_num, column=i, padx=10, pady=5)
+        entries.append(entry)
+    
+    # 각 행의 입력 필드를 session_data 리스트에 추가
+    session_data[row_num] = entries
+
+    # 첫 번째 행이 아닌 경우에만 삭제 버튼 추가
+    if row_num != 1:
+        delete_button = tk.Button(session_window, text="삭제", command=lambda: delete_entry_row(session_window, labels, session_data, row_num, add_button, save_button))
+        delete_button.grid(row=row_num, column=len(labels), padx=10, pady=5)
+
+    # '추가', '저장' 버튼 위치 재조정
+    add_button.grid(row=row_num + 1, column=len(labels), padx=10, pady=5)
+    save_button.grid(row=row_num + 1, column=len(labels) + 1, columnspan=2, pady=10)
+
+# 입력 행 삭제 함수
+def delete_entry_row(session_window, labels, session_data, row_num, add_button, save_button):
+    # 해당 행의 모든 위젯 숨기기
+    for widget in session_window.grid_slaves(row=row_num):
+        widget.grid_forget()
+    
+    # 해당 행의 데이터 삭제
+    print("length : ", len(session_data), ", row : ", row_num)
+    del session_data[row_num]
+    print("length : ", len(session_data))
+
+    # 행 번호 재조정
+    for r in range(row_num, len(session_data) + 1):
+        for widget in session_window.grid_slaves(row=r+1):
+            widget.grid(row=r)
+            
+    # 데이터 재조정
+    session_data_adjusted = {}
+    for i, (k, v) in enumerate(session_data.items()):
+        session_data_adjusted[i+1] = v
+    
+    session_data.clear()
+    session_data.update(session_data_adjusted)
+    
+    # 모든 '회차' 라벨 업데이트
+    for r, widgets in session_data.items():
+        label = session_window.grid_slaves(row=r, column=0)[0]
+        label.config(text=f"{r}회기")
+        new_row_num = r
+    
+    print("new_row_num :", new_row_num)
+    # 삭제 버튼의 command 재설정
+    if new_row_num != 1:
+        delete_button = tk.Button(session_window, text="삭제", command=lambda r=new_row_num: delete_entry_row(session_window, labels, session_data, r, add_button, save_button))
+        delete_button.grid(row=new_row_num, column=len(labels), padx=10, pady=5)
+    
+    # '추가' 버튼 위치를 재조정된 마지막 행의 우측으로 이동
+    add_button.grid(row=len(session_data) + 2, column=len(labels), padx=10, pady=5)
+    # 저장 버튼 생성
+    save_button.grid(row=len(session_data) + 2, column=len(labels) + 1, columnspan=2, pady=10)
+
+# 회기 세부 정보 입력 창을 여는 함수
+def open_sessions(window):
+    session_window = tk.Toplevel(window)
+    session_window.title("회기 세부 정보")
+    session_window.geometry("900x600")  # 새 창 크기 설정
+    
+    # 세션 데이터 저장할 딕셔너리
+    session_data = {}
+
+    # 테이블 헤더 생성
+    labels = ["회기", "날짜", "상담내용"]
+    for i, label_text in enumerate(labels):
+        label = tk.Label(session_window, text=label_text)
+        label.grid(row=0, column=i, padx=10, pady=5)
+
+    # 첫 번째 입력 행 추가
+    add_button = tk.Button(session_window, text="추가", command=lambda: add_entry_row(session_window, labels, session_data, len(session_data) + 1, add_button, save_button))
+    save_button = tk.Button(session_window, text="저장", command=lambda: save_session_data(session_window, {k: [e.get() for e in v] for k, v in session_data.items()}))
+
+    # 초기 설정
+    add_entry_row(session_window, labels, session_data, 1, add_button, save_button)
+
 def create_field_entries(window):
     """필드 및 라벨 설정을 함수화하여 중복 제거."""
     labels_and_fields = {}
     special_entries = {}
     window_widgets = []
     
-    def open_sessions(window):
-        create_window = tk.Toplevel(window)
-        create_window.title("상세")
-        create_window.geometry("800x600")  # 새 창 크기 설정
-
-        sessions_entry = labels_and_fields.get("회기 수").get()
-        num_sessions = int(sessions_entry)
-
-        # 테이블을 위한 프레임 생성
-        table_frame = tk.Frame(create_window)
-        table_frame.pack(pady=10)
-
-        # 테이블 헤더 생성
-        headers = ["회기", "상담 날짜", "상담 내용"]
-        for col, header in enumerate(headers):
-            label = tk.Label(table_frame, text=header, borderwidth=1, relief="solid")
-            label.grid(row=0, column=col, padx=5, pady=5)
-
-        # 세션에 따라 행 생성
-        for row in range(1, num_sessions + 1):
-            for col in range(3):  # 3열
-                entry = tk.Entry(table_frame, borderwidth=1, relief="solid")
-                entry.grid(row=row, column=col, padx=5, pady=5)
-        
-
     def calculate_age():
         try:
             """생년월일을 입력받아 나이를 계산합니다."""
@@ -525,7 +595,10 @@ def read_users_gui(search_query=None):
     
     for row in rows:
         formatted_row = list(row)
-        age = update_age(formatted_row[3], formatted_row[4], formatted_row[5])
+        if not formatted_row[3] or not formatted_row[3] or not formatted_row[3]:
+            age = "-"
+        else:
+            age = update_age(formatted_row[3], formatted_row[4], formatted_row[5])
         sql.update_user(
                             formatted_row[0],
                             name=formatted_row[1],
