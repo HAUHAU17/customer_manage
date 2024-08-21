@@ -154,21 +154,17 @@ def add_entry_row(session_window, labels, session_data, row_num, add_button, sav
     save_button.grid(row=row_num + 1, column=len(labels) + 1, columnspan=2, pady=10)
 
 # 입력 행 삭제 함수
+previous_row_num = 2
 def delete_entry_row(session_window, labels, session_data, row_num, add_button, save_button):
-    # 해당 행의 모든 위젯 숨기기
-    for widget in session_window.grid_slaves(row=row_num):
-        widget.grid_forget()
+    global previous_row_num
     
     # 해당 행의 데이터 삭제
-    print("length : ", len(session_data), ", row : ", row_num)
     del session_data[row_num]
-    print("length : ", len(session_data))
-
-    # 행 번호 재조정
-    for r in range(row_num, len(session_data) + 1):
-        for widget in session_window.grid_slaves(row=r+1):
-            widget.grid(row=r)
-            
+    
+    # 해당 행의 모든 위젯 삭제
+    for widget in session_window.grid_slaves(row=row_num):
+        widget.destroy()
+    
     # 데이터 재조정
     session_data_adjusted = {}
     for i, (k, v) in enumerate(session_data.items()):
@@ -177,17 +173,30 @@ def delete_entry_row(session_window, labels, session_data, row_num, add_button, 
     session_data.clear()
     session_data.update(session_data_adjusted)
     
+    # 행 번호 재조정
+    for r in range(row_num, len(session_data) + 1):
+        for widget in session_window.grid_slaves(row=r+1):
+            widget.grid(row=r)
+    
     # 모든 '회차' 라벨 업데이트
+    new_row_num = 1
     for r, widgets in session_data.items():
         label = session_window.grid_slaves(row=r, column=0)[0]
         label.config(text=f"{r}회기")
         new_row_num = r
     
-    print("new_row_num :", new_row_num)
     # 삭제 버튼의 command 재설정
     if new_row_num != 1:
-        delete_button = tk.Button(session_window, text="삭제", command=lambda r=new_row_num: delete_entry_row(session_window, labels, session_data, r, add_button, save_button))
-        delete_button.grid(row=new_row_num, column=len(labels), padx=10, pady=5)
+        if row_num < new_row_num:
+            delete_button = tk.Button(session_window, text="삭제", command=lambda r=row_num: delete_entry_row(session_window, labels, session_data, r, add_button, save_button))
+            delete_button.grid(row=row_num, column=len(labels), padx=10, pady=5)
+            previous_row_num = row_num
+        else:
+            delete_button = tk.Button(session_window, text="삭제", command=lambda r=new_row_num: delete_entry_row(session_window, labels, session_data, r, add_button, save_button))
+            delete_button.grid(row=new_row_num, column=len(labels), padx=10, pady=5)
+            previous_row_num = new_row_num
+    else:
+        previous_row_num = 1
     
     # '추가' 버튼 위치를 재조정된 마지막 행의 우측으로 이동
     add_button.grid(row=len(session_data) + 2, column=len(labels), padx=10, pady=5)
