@@ -64,6 +64,18 @@ def create_session_detail(user_id, session_number, session_date, details):
     
     conn.commit()
 
+def check_session_detail(user_id, session_number):
+    c.execute('''
+        SELECT detail_id FROM sessions_detail 
+        WHERE user_id = ? AND session_number = ?
+    ''', (user_id, session_number))
+    
+    return c.fetchone()
+
+def check_user_exists(user_id):
+    c.execute('SELECT 1 FROM users WHERE user_id = ?', (user_id,))
+    return c.fetchone() is not None
+
 def get_session_details_by_user(user_id):
     c.execute('''
         SELECT detail_id, session_number, session_date, details 

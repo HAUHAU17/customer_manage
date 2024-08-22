@@ -71,15 +71,6 @@ def update_font_size(percent, all_widgets):
 def set_font_size(percent, all_widgets, var):
     update_font_size(percent, all_widgets)
     var.set(percent)  # 현재 선택된 폰트 크기를 업데이트
-    update_checkmarks()  # 체크 표시 업데이트
-
-def update_checkmarks():
-    global font_menu
-    for index, percent in enumerate(percent_buttons):
-        if percent == var.get():
-            font_menu.entryconfig(index, indicatoron=True, selectcolor="lightgray", background="lightgray", foreground="blue")
-        else:
-            font_menu.entryconfig(index, indicatoron=False, background="white", foreground="black")
 
 def create_menu(root, all_widgets):
     global font_menu, percent_buttons, var
@@ -100,9 +91,6 @@ def create_menu(root, all_widgets):
     
     for percent in percent_buttons:
         font_menu.add_radiobutton(label=f"{percent}%", variable=var, value=percent, command=lambda p=percent: set_font_size(p, all_widgets, var))
-    
-    # 초기 체크 표시 업데이트
-    update_checkmarks()
 
 def update_age(year, month, day):
     today = datetime.today()
@@ -121,11 +109,27 @@ def validate_hyphen(input_value):
     """"-"만 허용하는 검증 함수"""
     return  input_value!="-"
 
+def update_sessions_detail(user_id, session_number, session_date, details):
+    # 데이터가 이미 존재하는지 확인
+    result = sql.check_session_detail(user_id, session_number)
+    
+    if result:
+        # 데이터가 존재하면 업데이트
+        detail_id = result[0]
+        sql.update_session_detail(detail_id, session_date, details)
+    else:
+        sql.create_session_detail(user_id, session_number, session_date, details)
+
 # 세션 저장 함수
-def save_session_data(session_window, session_data):
-    # 여기에 데이터베이스 저장 로직을 추가하세요.
-    # 예: cursor.execute("INSERT INTO sessions (field1, field2, ...) VALUES (?, ?, ...)", (value1, value2, ...))
-    print("세션 데이터 저장:", session_data)  # 이 부분은 실제로 DB에 저장하는 코드로 대체해야 합니다.
+def save_session_data(session_window, session_data, user_id):
+    print(session_data)
+    for row_num, entries in session_data.items():
+        session_number = row_num
+        session_date = entries[0]
+        details = entries[1]
+        
+        update_sessions_detail(user_id, session_number, session_date, details)
+    
     messagebox.showinfo("저장 완료", "세션 정보가 저장되었습니다.")
     session_window.destroy()
 
@@ -136,38 +140,45 @@ def add_entry_row(session_window, labels, session_data, row_num, add_button, sav
     tk.Label(session_window, text=f"{row_num}회기").grid(row=row_num, column=0, padx=10, pady=5)
 
     for i, label_text in enumerate(labels[1:], start=1):
-        entry = tk.Entry(session_window)
-        entry.grid(row=row_num, column=i, padx=10, pady=5)
+        if label_text == "날짜":
+            entry = DateEntry(session_window, width=12, background='darkblue', foreground='white', borderwidth=2)
+            entry.grid(row=row_num, column=i, padx=10, pady=5)
+        else:
+            entry = tk.Entry(session_window, width = 80)
+            entry.grid(row=row_num, column=i, padx=10, pady=5)
         entries.append(entry)
     
     # 각 행의 입력 필드를 session_data 리스트에 추가
     session_data[row_num] = entries
     
     # '추가', '저장', '삭제' 버튼 위치 재조정
-    add_button.grid(row=row_num + 1, column=len(labels), padx=5, pady=5)
-    delete_button.grid(row=row_num + 1, column=len(labels) + 1, padx=5, pady=5)
-    save_button.grid(row=row_num + 1, column=len(labels) + 2, padx=5, pady=10)
+    add_button.grid(row=row_num + 1, column=len(labels) + 1, padx=5, pady=5)
+    delete_button.grid(row=row_num + 1, column=len(labels) + 2, padx=5, pady=5)
+    save_button.grid(row=row_num + 1, column=len(labels) + 3, padx=5, pady=10)
 
 # 입력 행 추가 함수
-def delete_entry_row(session_window, labels, session_data, add_button, save_button, delete_button):
+def delete_entry_row(session_window, labels, session_data, add_button, save_button, delete_button, user_id):
     if len(session_data) > 1:
         # 마지막 입력 행 삭제
         last_row_num = max(session_data.keys())
         for entry in session_data[last_row_num]:
             entry.destroy()
+        
+        # 데이터베이스에서 해당 세션 삭제
+        sql.delete_session_detail(user_id, last_row_num)
         session_window.grid_slaves(row=last_row_num)[0].destroy()  # 회차 라벨 제거
         del session_data[last_row_num]
 
         # '추가', '저장', '삭제' 버튼 위치 재조정
-        add_button.grid(row=len(session_data) + 1, column=len(labels), padx=5, pady=5)
-        delete_button.grid(row=len(session_data) + 1, column=len(labels) + 1, padx=5, pady=5)
-        save_button.grid(row=len(session_data) + 1, column=len(labels) + 2, padx=5, pady=10)
+        add_button.grid(row=len(session_data) + 1, column=len(labels) + 1, padx=5, pady=5)
+        delete_button.grid(row=len(session_data) + 1, column=len(labels) + 2, padx=5, pady=5)
+        save_button.grid(row=len(session_data) + 1, column=len(labels) + 3, padx=5, pady=10)
 
 # 회기 세부 정보 입력 창을 여는 함수
-def open_sessions(window):
+def open_sessions(window, user_id=None):
     session_window = tk.Toplevel(window)
     session_window.title("회기 세부 정보")
-    session_window.geometry("900x600")  # 새 창 크기 설정
+    session_window.geometry("1000x600")  # 새 창 크기 설정
     
     # 세션 데이터 저장할 딕셔너리
     session_data = {}
@@ -177,16 +188,18 @@ def open_sessions(window):
     for i, label_text in enumerate(labels):
         label = tk.Label(session_window, text=label_text)
         label.grid(row=0, column=i, padx=10, pady=5)
+    
+    user_data =sql.get_session_details_by_user(user_id)
 
     # 첫 번째 입력 행 추가
     add_button = tk.Button(session_window, text="행 추가", command=lambda: add_entry_row(session_window, labels, session_data, len(session_data) + 1, add_button, save_button, delete_button))
-    save_button = tk.Button(session_window, text="저장", command=lambda: save_session_data(session_window, {k: [e.get() for e in v] for k, v in session_data.items()}))
-    delete_button = tk.Button(session_window, text="행 삭제", command=lambda: delete_entry_row(session_window, labels, session_data, add_button, save_button, delete_button))
+    save_button = tk.Button(session_window, text="저장", command=lambda: save_session_data(session_window, {k: [e.get() for e in v] for k, v in session_data.items()}, user_id=user_id))
+    delete_button = tk.Button(session_window, text="행 삭제", command=lambda: delete_entry_row(session_window, labels, session_data, add_button, save_button, delete_button, user_id=user_id))
 
     # 초기 설정
     add_entry_row(session_window, labels, session_data, 1, add_button, save_button, delete_button)
 
-def create_field_entries(window):
+def create_field_entries(window, user_id=None):
     """필드 및 라벨 설정을 함수화하여 중복 제거."""
     labels_and_fields = {}
     special_entries = {}
@@ -227,8 +240,9 @@ def create_field_entries(window):
             continue
         elif header in ["회기 수"]:
             entry = tk.Entry(window, width=10, validate="key", validatecommand=(window.register(validate_integer), "%P"))
-            session_button = tk.Button(window, text="상세", command=lambda: open_sessions(window))
-            special_entries[header] = session_button
+            if user_id:
+                session_button = tk.Button(window, text="상세", command=lambda: open_sessions(window, user_id))
+                special_entries[header] = session_button
         elif header in ["상담시작일", "시작연도", "상담종료일", "종료연도"]:
             entry = tk.Entry(window, width=10, validate="key", validatecommand=(window.register(validate_integer), "%P"))
         elif header in ["시작월", "시작일", "종료월", "종료일"]:
@@ -280,7 +294,7 @@ def create_field_entries(window):
     
     return labels_and_fields, special_entries
 
-def grid_field_entries(labels_and_fields, special_entries, window):
+def grid_field_entries(labels_and_fields, special_entries, window, user_id=None):
     """필드 및 라벨의 그리드를 설정."""
     row = 0
     for label_text, entry in labels_and_fields.items():
@@ -338,9 +352,11 @@ def grid_field_entries(labels_and_fields, special_entries, window):
                 entry.grid(row=row, column=1, padx=1, pady=5, sticky='w')
                 row += 1
             elif label_text == "회기 수":
-                session_button = special_entries[label_text]
                 entry.grid(row=row, column=1, padx=1, pady=5, sticky='w')
-                session_button.grid(row=row, column=2, padx=1, pady=5, sticky='w')
+
+                if user_id:
+                    session_button = special_entries[label_text]
+                    session_button.grid(row=row, column=2, padx=1, pady=5, sticky='w')
                 row += 1
             else:
                 entry.grid(row=row, column=1, columnspan=20, padx=1, pady=5, sticky='w')
@@ -533,8 +549,8 @@ def open_update_window(user_id):
     update_window.title("편집")
     update_window.geometry("800x600")  # 새 창 크기 설정
 
-    entries, special_entries = create_field_entries(update_window)
-    grid_field_entries(entries, special_entries, update_window)
+    entries, special_entries = create_field_entries(update_window, user_id)
+    grid_field_entries(entries, special_entries, update_window, user_id)
 
     # 기존 데이터로 필드 채우기
     populate_fields(entries, user_data)
@@ -618,7 +634,6 @@ def read_users_gui(search_query=None):
     
     settings = load_settings()
     update_font_size(settings["font_size"], main_widgets)
-
     create_menu(root, main_widgets)
 
 def on_user_select(event=None):
