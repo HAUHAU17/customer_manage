@@ -122,7 +122,6 @@ def update_sessions_detail(user_id, session_number, session_date, details):
 
 # 세션 저장 함수
 def save_session_data(session_window, session_data, user_id):
-    print(session_data)
     for row_num, entries in session_data.items():
         session_number = row_num
         session_date = entries[0]
@@ -133,7 +132,7 @@ def save_session_data(session_window, session_data, user_id):
     messagebox.showinfo("저장 완료", "세션 정보가 저장되었습니다.")
     session_window.destroy()
 
-def add_entry_row(session_window, labels, session_data, row_num, add_button, save_button, delete_button):
+def add_entry_row(session_window, labels, session_data, row_num, add_button, save_button, delete_button, preset_data=None):
     entries = []
     
     # '회차' 라벨 추가
@@ -142,9 +141,13 @@ def add_entry_row(session_window, labels, session_data, row_num, add_button, sav
     for i, label_text in enumerate(labels[1:], start=1):
         if label_text == "날짜":
             entry = DateEntry(session_window, width=12, background='darkblue', foreground='white', borderwidth=2)
+            if preset_data:
+                entry.set_date(preset_data[0])  # 날짜를 미리 채웁니다.
             entry.grid(row=row_num, column=i, padx=10, pady=5)
         else:
-            entry = tk.Entry(session_window, width = 80)
+            entry = tk.Entry(session_window, width=80)
+            if preset_data:
+                entry.insert(0, preset_data[1])  # 상담 내용을 미리 채웁니다.
             entry.grid(row=row_num, column=i, padx=10, pady=5)
         entries.append(entry)
     
@@ -157,7 +160,7 @@ def add_entry_row(session_window, labels, session_data, row_num, add_button, sav
     save_button.grid(row=row_num + 1, column=len(labels) + 3, padx=5, pady=10)
 
 # 입력 행 추가 함수
-def delete_entry_row(session_window, labels, session_data, add_button, save_button, delete_button, user_id):
+def delete_entry_row(session_window, labels, session_data, add_button, save_button, delete_button):
     if len(session_data) > 1:
         # 마지막 입력 행 삭제
         last_row_num = max(session_data.keys())
@@ -165,7 +168,7 @@ def delete_entry_row(session_window, labels, session_data, add_button, save_butt
             entry.destroy()
         
         # 데이터베이스에서 해당 세션 삭제
-        sql.delete_session_detail(user_id, last_row_num)
+        sql.delete_session_detail(last_row_num)
         session_window.grid_slaves(row=last_row_num)[0].destroy()  # 회차 라벨 제거
         del session_data[last_row_num]
 
@@ -194,10 +197,20 @@ def open_sessions(window, user_id=None):
     # 첫 번째 입력 행 추가
     add_button = tk.Button(session_window, text="행 추가", command=lambda: add_entry_row(session_window, labels, session_data, len(session_data) + 1, add_button, save_button, delete_button))
     save_button = tk.Button(session_window, text="저장", command=lambda: save_session_data(session_window, {k: [e.get() for e in v] for k, v in session_data.items()}, user_id=user_id))
-    delete_button = tk.Button(session_window, text="행 삭제", command=lambda: delete_entry_row(session_window, labels, session_data, add_button, save_button, delete_button, user_id=user_id))
+    delete_button = tk.Button(session_window, text="행 삭제", command=lambda: delete_entry_row(session_window, labels, session_data, add_button, save_button, delete_button))
 
+    #기존 데이터를 사용해 입력 행 추가
+    if user_data:
+        for session in user_data:
+            session_number = session[1]
+            session_date = session[2]
+            details = session[3]
+            add_entry_row(session_window, labels, session_data, session_number, add_button, save_button, delete_button, preset_data=[session_date, details])
+    else:
+        add_entry_row(session_window, labels, session_data, 1, add_button, save_button, delete_button)
+    
     # 초기 설정
-    add_entry_row(session_window, labels, session_data, 1, add_button, save_button, delete_button)
+    #add_entry_row(session_window, labels, session_data, 1, add_button, save_button, delete_button)
 
 def create_field_entries(window, user_id=None):
     """필드 및 라벨 설정을 함수화하여 중복 제거."""
