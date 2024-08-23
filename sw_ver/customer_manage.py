@@ -138,9 +138,9 @@ def convert_date_format(date_str, date_type):
         return converted_date
     except ValueError:
         return date_str
-    
+
 # 세션 저장 함수
-def save_session_data(session_window, session_data, user_id):
+def save_session_data(edit_window, session_window, session_data, user_id):
     for row_num, entries in session_data.items():
         session_number = row_num
         session_date = convert_date_format(entries[0], hyphen_type)
@@ -151,11 +151,16 @@ def save_session_data(session_window, session_data, user_id):
     messagebox.showinfo("저장 완료", "세션 정보가 저장되었습니다.")
     session_window.destroy()
 
-def add_entry_row(session_window, labels, session_data, row_num, add_button, save_button, delete_button, preset_data=None):
+    edit_window.deiconify()
+
+def add_entry_row(session_window, labels, session_data, row_num, add_button, save_button, delete_button, preset_data=None, session_window_widgets=None):
     entries = []
     
     # '회차' 라벨 추가
-    tk.Label(session_window, text=f"{row_num}회기").grid(row=row_num, column=0, padx=10, pady=5)
+    label = tk.Label(session_window, text=f"{row_num}회기")
+    label.grid(row=row_num, column=0, padx=10, pady=5)
+    if session_window_widgets is not None:
+        session_window_widgets.append(label)
 
     for i, label_text in enumerate(labels[1:], start=1):
         if label_text == "날짜":
@@ -169,6 +174,8 @@ def add_entry_row(session_window, labels, session_data, row_num, add_button, sav
                 entry.insert(0, preset_data[1])  # 상담 내용을 미리 채웁니다.
             entry.grid(row=row_num, column=i, padx=10, pady=5)
         entries.append(entry)
+        if session_window_widgets is not None:
+            session_window_widgets.append(entry)
     
     # 각 행의 입력 필드를 session_data 리스트에 추가
     session_data[row_num] = entries
@@ -178,16 +185,21 @@ def add_entry_row(session_window, labels, session_data, row_num, add_button, sav
     delete_button.grid(row=row_num + 1, column=len(labels) + 2, padx=5, pady=5)
     save_button.grid(row=row_num + 1, column=len(labels) + 3, padx=5, pady=10)
 
+    if session_window_widgets is not None:
+        session_window_widgets.extend([add_button, delete_button, save_button])
+
 # 입력 행 추가 함수
-def delete_entry_row(session_window, labels, session_data, add_button, save_button, delete_button):
+def delete_entry_row(session_window, labels, session_data, add_button, save_button, delete_button, user_data):
     if len(session_data) > 1:
         # 마지막 입력 행 삭제
         last_row_num = max(session_data.keys())
         for entry in session_data[last_row_num]:
             entry.destroy()
         
+        last_detail_id = user_data[last_row_num-1][0]
+        
         # 데이터베이스에서 해당 세션 삭제
-        sql.delete_session_detail(last_row_num)
+        sql.delete_session_detail(last_detail_id)
         session_window.grid_slaves(row=last_row_num)[0].destroy()  # 회차 라벨 제거
         del session_data[last_row_num]
 
@@ -204,19 +216,21 @@ def open_sessions(window, user_id=None):
     
     # 세션 데이터 저장할 딕셔너리
     session_data = {}
+    session_window_widgets = []
 
     # 테이블 헤더 생성
     labels = ["회기", "날짜", "상담내용"]
     for i, label_text in enumerate(labels):
         label = tk.Label(session_window, text=label_text)
         label.grid(row=0, column=i, padx=10, pady=5)
+        session_window_widgets.append(label)
     
     user_data =sql.get_session_details_by_user(user_id)
 
     # 첫 번째 입력 행 추가
-    add_button = tk.Button(session_window, text="행 추가", command=lambda: add_entry_row(session_window, labels, session_data, len(session_data) + 1, add_button, save_button, delete_button))
-    save_button = tk.Button(session_window, text="저장", command=lambda: save_session_data(session_window, {k: [e.get() for e in v] for k, v in session_data.items()}, user_id=user_id))
-    delete_button = tk.Button(session_window, text="행 삭제", command=lambda: delete_entry_row(session_window, labels, session_data, add_button, save_button, delete_button))
+    add_button = tk.Button(session_window, text="행 추가", command=lambda: add_entry_row(session_window, labels, session_data, len(session_data) + 1, add_button, save_button, delete_button, session_window_widgets=session_window_widgets))
+    save_button = tk.Button(session_window, text="저장", command=lambda: save_session_data(window, session_window, {k: [e.get() for e in v] for k, v in session_data.items()}, user_id=user_id))
+    delete_button = tk.Button(session_window, text="행 삭제", command=lambda: delete_entry_row(session_window, labels, session_data, add_button, save_button, delete_button, user_data))
 
     #기존 데이터를 사용해 입력 행 추가
     if user_data:
@@ -224,12 +238,13 @@ def open_sessions(window, user_id=None):
             session_number = session[1]
             session_date = convert_date_format(session[2], slash_type)
             details = session[3]
-            add_entry_row(session_window, labels, session_data, session_number, add_button, save_button, delete_button, preset_data=[session_date, details])
+            add_entry_row(session_window, labels, session_data, session_number, add_button, save_button, delete_button, preset_data=[session_date, details], session_window_widgets=session_window_widgets)
     else:
-        add_entry_row(session_window, labels, session_data, 1, add_button, save_button, delete_button)
+        add_entry_row(session_window, labels, session_data, 1, add_button, save_button, delete_button, session_window_widgets=session_window_widgets)
     
-    # 초기 설정
-    #add_entry_row(session_window, labels, session_data, 1, add_button, save_button, delete_button)
+    # 메뉴바 생성
+    update_font_size(settings["font_size"], session_window_widgets)
+    create_menu(session_window, session_window_widgets)
 
 def create_field_entries(window, user_id=None):
     """필드 및 라벨 설정을 함수화하여 중복 제거."""
@@ -322,7 +337,7 @@ def create_field_entries(window, user_id=None):
     
     # 메뉴바 생성
     update_font_size(settings["font_size"], window_widgets)
-    create_menu(window, window_widgets)  # Pass the widget list to create_menu
+    create_menu(window, window_widgets)
     
     return labels_and_fields, special_entries
 
@@ -613,7 +628,7 @@ def read_users_gui(search_query=None):
     
     for row in rows:
         formatted_row = list(row)
-        if not formatted_row[3] or not formatted_row[3] or not formatted_row[3]:
+        if not formatted_row[3] or not formatted_row[4] or not formatted_row[5]:
             age = "-"
         else:
             age = update_age(formatted_row[3], formatted_row[4], formatted_row[5])
