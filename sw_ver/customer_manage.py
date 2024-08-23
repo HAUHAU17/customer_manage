@@ -56,7 +56,7 @@ treeview_users.grid(row=2, column=0, columnspan=5, padx=10, pady=10, sticky='nse
 
 gender_var = tk.StringVar()
 
-def update_font_size(percent, all_widgets):
+def update_font_size(percent, all_widgets, bar_type=None):
     size = int(BASE_FONT_SIZE * percent / 100)
     global custom_font, settings
     custom_font = ("Arial", size)
@@ -66,17 +66,22 @@ def update_font_size(percent, all_widgets):
         widget.config(font=custom_font)
     
     # Treeview의 스타일 업데이트
-    style = ttk.Style()
-    style.configure("Treeview", font=custom_font)
+    if bar_type == main_bar:
+        style = ttk.Style()
+        style.configure("Treeview", font=custom_font)
 
     settings["font_size"] = percent
     save_settings(settings)
 
-def set_font_size(percent, all_widgets, var):
-    update_font_size(percent, all_widgets)
+def set_font_size(percent, all_widgets, var, bar_type):
+    update_font_size(percent, all_widgets, bar_type)
     var.set(percent)  # 현재 선택된 폰트 크기를 업데이트
 
-def create_menu(root, all_widgets):
+main_bar = 1
+edit_bar = 2
+sessions_bar = 3
+
+def create_menu(root, all_widgets, bar_type):
     global font_menu, percent_buttons, var
     menu_bar = tk.Menu(root)
     root.config(menu=menu_bar)
@@ -94,7 +99,7 @@ def create_menu(root, all_widgets):
     var = tk.IntVar(value=settings.get("font_size", 100))
     
     for percent in percent_buttons:
-        font_menu.add_radiobutton(label=f"{percent}%", variable=var, value=percent, command=lambda p=percent: set_font_size(p, all_widgets, var))
+        font_menu.add_radiobutton(label=f"{percent}%", variable=var, value=percent, command=lambda p=percent: set_font_size(p, all_widgets, var, bar_type))
 
 def update_age(year, month, day):
     today = datetime.today()
@@ -244,7 +249,7 @@ def open_sessions(window, user_id=None):
     
     # 메뉴바 생성
     update_font_size(settings["font_size"], session_window_widgets)
-    create_menu(session_window, session_window_widgets)
+    create_menu(session_window, session_window_widgets, sessions_bar)
 
 def create_field_entries(window, user_id=None):
     """필드 및 라벨 설정을 함수화하여 중복 제거."""
@@ -337,7 +342,7 @@ def create_field_entries(window, user_id=None):
     
     # 메뉴바 생성
     update_font_size(settings["font_size"], window_widgets)
-    create_menu(window, window_widgets)
+    create_menu(window, window_widgets, edit_bar)
     
     return labels_and_fields, special_entries
 
@@ -677,11 +682,11 @@ def read_users_gui(search_query=None):
         treeview_users.insert("", tk.END, iid=str(row[0]), values=selected_column)
         
     # 메뉴바 생성
-    main_widgets = [entry_search, button_search, button_show_all, button_create, button_update, button_delete, export_button]
+    main_widgets = [label_search, option_menu, entry_search, button_search, button_show_all, button_create, button_update, button_delete, export_button]
     
     settings = load_settings()
     update_font_size(settings["font_size"], main_widgets)
-    create_menu(root, main_widgets)
+    create_menu(root, main_widgets, main_bar)
 
 def on_user_select(event=None):
     selected_item = treeview_users.selection()
