@@ -85,6 +85,29 @@ def get_session_details_by_user(user_id):
     
     return c.fetchall()
 
+def fetch_session_details_by_user(user_id, columns):
+    """특정 사용자의 세션 세부 정보를 가져오는 함수"""
+    
+    field_map = {
+        '회기' : 'session_number',
+        '날짜' :'session_date',
+        '상담내용' : 'details'
+    }
+
+    db_columns = [field_map.get(col, col) for col in columns]
+    
+    query = f'''
+        SELECT {", ".join(db_columns)}
+        FROM sessions_detail
+        WHERE user_id = ?
+        ORDER BY session_number ASC
+    '''
+    
+    c.execute(query, (user_id,))
+    session_details = c.fetchall()
+    
+    return session_details
+
 def update_session_detail(detail_id, session_date, details):
     c.execute('''
         UPDATE sessions_detail 

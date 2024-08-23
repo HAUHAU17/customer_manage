@@ -27,6 +27,10 @@ viewonly_headers = [
 export_headers = [
     "ID", "이름", "생년월일", "나이", "메일", "성별", "전화번호", "주소", "상담시작일", "상담종료일", "호소문제", "회기 수", "특이사항"
 ]
+export_detail_headers = [
+    "회기", "날짜", "상담내용"
+]
+
 treeview_users = ttk.Treeview(root, columns=viewonly_headers, show='headings')
 
 # 기본 열 너비 설정
@@ -120,11 +124,26 @@ def update_sessions_detail(user_id, session_number, session_date, details):
     else:
         sql.create_session_detail(user_id, session_number, session_date, details)
 
+slash_type = 0
+hyphen_type = 1
+
+def convert_date_format(date_str, date_type):
+    try:
+        if date_type == hyphen_type:
+            date_obj = datetime.strptime(date_str, '%m/%d/%y')
+            converted_date = date_obj.strftime('%Y-%m-%d')
+        else:
+            date_obj = datetime.strptime(date_str, '%Y-%m-%d')
+            converted_date = date_obj.strftime('%m/%d/%y')
+        return converted_date
+    except ValueError:
+        return date_str
+    
 # 세션 저장 함수
 def save_session_data(session_window, session_data, user_id):
     for row_num, entries in session_data.items():
         session_number = row_num
-        session_date = entries[0]
+        session_date = convert_date_format(entries[0], hyphen_type)
         details = entries[1]
         
         update_sessions_detail(user_id, session_number, session_date, details)
@@ -203,7 +222,7 @@ def open_sessions(window, user_id=None):
     if user_data:
         for session in user_data:
             session_number = session[1]
-            session_date = session[2]
+            session_date = convert_date_format(session[2], slash_type)
             details = session[3]
             add_entry_row(session_window, labels, session_data, session_number, add_button, save_button, delete_button, preset_data=[session_date, details])
     else:
@@ -689,10 +708,23 @@ def export_to_excel(user_id=None):
         columns_list = viewonly_headers
         messagebox.showinfo("정보", "고객 목록 엑셀 파일로 내보내졌습니다.")
     else:
-        data = sql.fetch_users_by_id(user_id)  # 데이터베이스에서 고객 데이터 가져오기
+        user_data = sql.fetch_users_by_id(user_id)  # 데이터베이스에서 고객 데이터 가져오기
         user_name = sql.fetch_user_name_by_id(user_id)
+        
+        # 세션 세부 정보 가져오기
+        session_details = sql.fetch_session_details_by_user(user_id, export_detail_headers)
+        
+        data = []
+        for session in session_details:
+            combined_data = list(user_data) + list(session)
+            # 중첩된 튜플을 리스트로 풀어줌
+            flattened_data = [item for sublist in combined_data for item in (sublist if isinstance(sublist, tuple) else [sublist])]
+            data.append(flattened_data)
+        
         file_name = user_name + "_정보.xlsx"
-        columns_list = export_headers
+
+        columns_list = export_headers + export_detail_headers
+        
         messagebox.showinfo("정보", user_name + "님 정보가 엑셀 파일로 내보내졌습니다.")
     
     df = pd.DataFrame(data, columns=columns_list)
