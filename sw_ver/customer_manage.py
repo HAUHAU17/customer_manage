@@ -15,7 +15,7 @@ root.geometry("1400x800")  # 메인 창 초기 크기 설정
 # 기본 폰트 크기
 BASE_FONT_SIZE = 10
 custom_font = ("Arial", BASE_FONT_SIZE)
-settings = {}
+settings = {"main_font_size": 100, "edit_font_size": 100, "sessions_font_size": 100}
 
 # Treeview 설정
 headers = [
@@ -56,6 +56,10 @@ treeview_users.grid(row=2, column=0, columnspan=5, padx=10, pady=10, sticky='nse
 
 gender_var = tk.StringVar()
 
+main_bar = 1
+edit_bar = 2
+sessions_bar = 3
+
 def update_font_size(percent, all_widgets, bar_type=None):
     size = int(BASE_FONT_SIZE * percent / 100)
     global custom_font, settings
@@ -65,21 +69,22 @@ def update_font_size(percent, all_widgets, bar_type=None):
     for widget in all_widgets:
         widget.config(font=custom_font)
     
+    settings = load_settings()
+
     # Treeview의 스타일 업데이트
     if bar_type == main_bar:
         style = ttk.Style()
         style.configure("Treeview", font=custom_font)
-
-    settings["font_size"] = percent
+        settings["main_font_size"] = percent
+    elif bar_type == edit_bar:
+        settings["edit_font_size"] = percent
+    elif bar_type == sessions_bar:
+        settings["sessions_font_size"] = percent
+    
     save_settings(settings)
 
 def set_font_size(percent, all_widgets, var, bar_type):
     update_font_size(percent, all_widgets, bar_type)
-    var.set(percent)  # 현재 선택된 폰트 크기를 업데이트
-
-main_bar = 1
-edit_bar = 2
-sessions_bar = 3
 
 def create_menu(root, all_widgets, bar_type):
     global font_menu, percent_buttons, var
@@ -96,7 +101,12 @@ def create_menu(root, all_widgets, bar_type):
     percent_buttons = [100, 110, 120, 130, 140, 150]
 
     # 현재 선택된 폰트 크기를 저장할 변수
-    var = tk.IntVar(value=settings.get("font_size", 100))
+    if bar_type == main_bar:
+        var = tk.IntVar(value=settings.get("main_font_size", 100))
+    elif bar_type == edit_bar:
+        var = tk.IntVar(value=settings.get("edit_font_size", 100))
+    elif bar_type == sessions_bar:
+        var = tk.IntVar(value=settings.get("sessions_font_size", 100))
     
     for percent in percent_buttons:
         font_menu.add_radiobutton(label=f"{percent}%", variable=var, value=percent, command=lambda p=percent: set_font_size(p, all_widgets, var, bar_type))
@@ -248,7 +258,8 @@ def open_sessions(window, user_id=None):
         add_entry_row(session_window, labels, session_data, 1, add_button, save_button, delete_button, session_window_widgets=session_window_widgets)
     
     # 메뉴바 생성
-    update_font_size(settings["font_size"], session_window_widgets)
+    settings = load_settings()
+    update_font_size(settings["sessions_font_size"], session_window_widgets, sessions_bar)
     create_menu(session_window, session_window_widgets, sessions_bar)
 
 def create_field_entries(window, user_id=None):
@@ -295,6 +306,8 @@ def create_field_entries(window, user_id=None):
             if user_id:
                 session_button = tk.Button(window, text="상세", command=lambda: open_sessions(window, user_id))
                 special_entries[header] = session_button
+                
+                window_widgets.append(session_button)
         elif header in ["상담시작일", "시작연도", "상담종료일", "종료연도"]:
             entry = tk.Entry(window, width=10, validate="key", validatecommand=(window.register(validate_integer), "%P"))
         elif header in ["시작월", "시작일", "종료월", "종료일"]:
@@ -340,18 +353,15 @@ def create_field_entries(window, user_id=None):
         labels_and_fields[header] = entry
         window_widgets.append(entry)
     
-    # 메뉴바 생성
-    update_font_size(settings["font_size"], window_widgets)
-    create_menu(window, window_widgets, edit_bar)
-    
-    return labels_and_fields, special_entries
+    return labels_and_fields, special_entries, window_widgets
 
-def grid_field_entries(labels_and_fields, special_entries, window, user_id=None):
+def grid_field_entries(labels_and_fields, special_entries, window, window_widgets, user_id=None):
     """필드 및 라벨의 그리드를 설정."""
     row = 0
     for label_text, entry in labels_and_fields.items():
         if label_text == "특이사항" or label_text == "호소문제":
-            tk.Label(window, text=label_text).grid(row=row, column=0, padx=10, pady=5, sticky='ew')
+            label = tk.Label(window, text=label_text)
+            label.grid(row=row, column=0, padx=10, pady=5, sticky='ew')
             scrollbar = tk.Scrollbar(window, command=entry.yview)
             entry.config(yscrollcommand=scrollbar.set)
 
@@ -362,16 +372,20 @@ def grid_field_entries(labels_and_fields, special_entries, window, user_id=None)
             row += 1
         elif label_text == "생년월일" or label_text == "성별" or label_text == "상담시작일" or label_text == "상담종료일":
             # Handling the special case for "생년월일", "성별", "상담시작일", "상담종료일"
-            tk.Label(window, text=label_text).grid(row=row, column=0, padx=10, pady=5, sticky='ew')
+            label = tk.Label(window, text=label_text)
+            label.grid(row=row, column=0, padx=10, pady=5, sticky='ew')
         elif label_text == "년":
             entry.grid(row=row, column=1, padx=1, pady=5, sticky='w')
-            tk.Label(window, text=label_text).grid(row=row, column=2, padx=1, pady=5, sticky='w')
+            label = tk.Label(window, text=label_text)
+            label.grid(row=row, column=2, padx=1, pady=5, sticky='w')
         elif label_text == "월":
             entry.grid(row=row, column=3, padx=1, pady=5, sticky='e')
-            tk.Label(window, text=label_text).grid(row=row, column=4, padx=1, pady=5, sticky='w')
+            label = tk.Label(window, text=label_text)
+            label.grid(row=row, column=4, padx=1, pady=5, sticky='w')
         elif label_text == "일":
             entry.grid(row=row, column=5, padx=1, pady=5, sticky='e')
-            tk.Label(window, text=label_text).grid(row=row, column=6, padx=1, pady=5, sticky='w')
+            label = tk.Label(window, text=label_text)
+            label.grid(row=row, column=6, padx=1, pady=5, sticky='w')
             row += 1
         elif label_text == "남자":
             entry.grid(row=row, column=1, padx=1, pady=5, sticky='w')
@@ -380,26 +394,33 @@ def grid_field_entries(labels_and_fields, special_entries, window, user_id=None)
             row += 1
         elif label_text == "시작연도":
             entry.grid(row=row, column=1, padx=1, pady=5, sticky='w')
-            tk.Label(window, text="년").grid(row=row, column=2, padx=1, pady=5, sticky='w')
+            label = tk.Label(window, text="년")
+            label.grid(row=row, column=2, padx=1, pady=5, sticky='w')
         elif label_text == "시작월":
             entry.grid(row=row, column=3, padx=1, pady=5, sticky='e')
-            tk.Label(window, text="월").grid(row=row, column=4, padx=1, pady=5, sticky='w')
+            label = tk.Label(window, text="월")
+            label.grid(row=row, column=4, padx=1, pady=5, sticky='w')
         elif label_text == "시작일":
             entry.grid(row=row, column=5, padx=1, pady=5, sticky='e')
-            tk.Label(window, text="일").grid(row=row, column=6, padx=1, pady=5, sticky='w')
+            label = tk.Label(window, text="일")
+            label.grid(row=row, column=6, padx=1, pady=5, sticky='w')
             row += 1
         elif label_text == "종료연도":
             entry.grid(row=row, column=1, padx=1, pady=5, sticky='w')
-            tk.Label(window, text="년").grid(row=row, column=2, padx=1, pady=5, sticky='w')
+            label = tk.Label(window, text="년")
+            label.grid(row=row, column=2, padx=1, pady=5, sticky='w')
         elif label_text == "종료월":
             entry.grid(row=row, column=3, padx=1, pady=5, sticky='e')
-            tk.Label(window, text="월").grid(row=row, column=4, padx=1, pady=5, sticky='w')
+            label = tk.Label(window, text="월")
+            label.grid(row=row, column=4, padx=1, pady=5, sticky='w')
         elif label_text == "종료일":
             entry.grid(row=row, column=5, padx=1, pady=5, sticky='e')
-            tk.Label(window, text="일").grid(row=row, column=6, padx=1, pady=5, sticky='w')
+            label = tk.Label(window, text="일")
+            label.grid(row=row, column=6, padx=1, pady=5, sticky='w')
             row += 1
         else:
-            tk.Label(window, text=label_text).grid(row=row, column=0, padx=10, pady=5, sticky='ew')
+            label = tk.Label(window, text=label_text)
+            label.grid(row=row, column=0, padx=10, pady=5, sticky='ew')
             if label_text == "이름" or label_text == "나이":
                 entry.grid(row=row, column=1, padx=1, pady=5, sticky='w')
                 row += 1
@@ -413,6 +434,10 @@ def grid_field_entries(labels_and_fields, special_entries, window, user_id=None)
             else:
                 entry.grid(row=row, column=1, columnspan=20, padx=1, pady=5, sticky='w')
                 row += 1
+        
+        window_widgets.append(label)
+    
+    return window_widgets
 
 def populate_fields(entries, user_data):
     """기존 데이터를 필드에 채워 넣음."""
@@ -579,8 +604,8 @@ def open_create_user_window():
     create_window.title("신규 생성")
     create_window.geometry("800x600")  # 새 창 크기 설정
 
-    entries, special_entries = create_field_entries(create_window)
-    grid_field_entries(entries, special_entries, create_window)
+    entries, special_entries, window_widgets = create_field_entries(create_window)
+    window_widgets = grid_field_entries(entries, special_entries, create_window, window_widgets)
 
     def save_new_user():
         values = {
@@ -594,6 +619,11 @@ def open_create_user_window():
     
     button_save = tk.Button(create_window, text="저장", command=save_new_user)
     button_save.grid(row=len(headers), column=20, padx=5, pady=5)
+    
+    # 메뉴바 생성
+    settings = load_settings()
+    update_font_size(settings["edit_font_size"], window_widgets, edit_bar)
+    create_menu(create_window, window_widgets, edit_bar)
 
 def open_update_window(user_id):
     user_data = [row for row in sql.read_users() if str(row[0]) == user_id][0]
@@ -601,8 +631,8 @@ def open_update_window(user_id):
     update_window.title("편집")
     update_window.geometry("800x600")  # 새 창 크기 설정
 
-    entries, special_entries = create_field_entries(update_window, user_id)
-    grid_field_entries(entries, special_entries, update_window, user_id)
+    entries, special_entries, window_widgets = create_field_entries(update_window, user_id)
+    window_widgets = grid_field_entries(entries, special_entries, update_window, window_widgets, user_id)
 
     # 기존 데이터로 필드 채우기
     populate_fields(entries, user_data)
@@ -626,6 +656,14 @@ def open_update_window(user_id):
 
     button_save = tk.Button(update_window, text="저장", command=save_updates)
     button_save.grid(row=len(headers), column=20, padx=5, pady=5)
+    
+    window_widgets.append(button_export)
+    window_widgets.append(button_save)
+
+    # 메뉴바 생성
+    settings = load_settings()
+    update_font_size(settings["edit_font_size"], window_widgets, edit_bar)
+    create_menu(update_window, window_widgets, edit_bar)
 
 def read_users_gui(search_query=None):
     treeview_users.delete(*treeview_users.get_children())
@@ -684,8 +722,9 @@ def read_users_gui(search_query=None):
     # 메뉴바 생성
     main_widgets = [label_search, option_menu, entry_search, button_search, button_show_all, button_create, button_update, button_delete, export_button]
     
+    # 메뉴바 생성
     settings = load_settings()
-    update_font_size(settings["font_size"], main_widgets)
+    update_font_size(settings["main_font_size"], main_widgets, main_bar)
     create_menu(root, main_widgets, main_bar)
 
 def on_user_select(event=None):
@@ -760,7 +799,7 @@ def load_settings(filename="settings.json"):
             settings = json.load(f)
     except FileNotFoundError:
         # 기본 설정을 반환 (파일이 없을 경우)
-        settings = {"font_size": 100}
+        settings = {"main_font_size": 100, "edit_font_size": 100, "sessions_font_size": 100}
     return settings
 
 def on_closing():
