@@ -248,6 +248,8 @@ def add_entry_row(session_window, labels, session_data, row_num, add_button, sav
 
     if session_window_widgets is not None:
         session_window_widgets.extend([add_button, delete_button, save_button])
+    
+    update_font_size(settings["sessions_font_size"], session_window_widgets, sessions_bar)
 
 # 입력 행 추가 함수
 def delete_entry_row(session_window, labels, session_data, add_button, save_button, delete_button):
