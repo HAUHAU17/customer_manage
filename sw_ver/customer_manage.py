@@ -7,15 +7,28 @@ from datetime import datetime
 import pandas as pd
 import json
 
+def save_settings(settings, filename="settings.json"):
+    with open(filename, "w") as f:
+        json.dump(settings, f)
+
+def load_settings(filename="settings.json"):
+    try:
+        with open(filename, "r") as f:
+            settings = json.load(f)
+    except FileNotFoundError:
+        # 기본 설정을 반환 (파일이 없을 경우)
+        settings = {"main_font_size": 100, "main_window_size": "1400x800", "edit_font_size": 100, "edit_window_size": "600x800", "sessions_font_size": 100, "sessions_window_size": "1000x600"}
+    return settings
+
 # GUI 애플리케이션 생성
 root = tk.Tk()
 root.title("고객 관리 프로그램")
-root.geometry("1400x800")  # 메인 창 초기 크기 설정
+settings = load_settings()
+root.geometry(settings["main_window_size"])  # 메인 창 초기 크기 설정
 
 # 기본 폰트 크기
 BASE_FONT_SIZE = 10
 custom_font = ("Arial", BASE_FONT_SIZE)
-settings = {"main_font_size": 100, "edit_font_size": 100, "sessions_font_size": 100}
 
 # Treeview 설정
 headers = [
@@ -60,6 +73,30 @@ main_bar = 1
 edit_bar = 2
 sessions_bar = 3
 
+def update_window_size(root, percent, bar_type=None):
+    if bar_type == main_bar:
+        style = ttk.Style()
+        style.configure("Treeview", font=custom_font)
+        text_width = 14 * percent
+        text_height = 8 * percent
+        windw_name = "main_window_size"
+        
+    elif bar_type == edit_bar:
+        text_width = 6 * percent
+        text_height = 8 * percent
+        windw_name = "edit_window_size"
+
+    elif bar_type == sessions_bar:
+        text_width = 10 * percent
+        text_height = 6 * percent
+        windw_name = "sessions_window_size"
+    
+    window_size = f"{text_width}x{text_height}"
+    root.geometry(window_size)
+    settings[windw_name] = window_size
+    
+    save_settings(settings)
+
 def update_font_size(percent, all_widgets, bar_type=None):
     size = int(BASE_FONT_SIZE * percent / 100)
     global custom_font, settings
@@ -83,8 +120,9 @@ def update_font_size(percent, all_widgets, bar_type=None):
     
     save_settings(settings)
 
-def set_font_size(percent, all_widgets, var, bar_type):
+def set_font_size(root, percent, all_widgets, var, bar_type):
     update_font_size(percent, all_widgets, bar_type)
+    update_window_size(root, percent, bar_type)
 
 def create_menu(root, all_widgets, bar_type):
     global font_menu, percent_buttons, var
@@ -109,7 +147,7 @@ def create_menu(root, all_widgets, bar_type):
         var = tk.IntVar(value=settings.get("sessions_font_size", 100))
     
     for percent in percent_buttons:
-        font_menu.add_radiobutton(label=f"{percent}%", variable=var, value=percent, command=lambda p=percent: set_font_size(p, all_widgets, var, bar_type))
+        font_menu.add_radiobutton(label=f"{percent}%", variable=var, value=percent, command=lambda p=percent: set_font_size(root, p, all_widgets, var, bar_type))
 
 def update_age(year, month, day):
     today = datetime.today()
@@ -225,9 +263,11 @@ def delete_entry_row(session_window, labels, session_data, add_button, save_butt
 
 # 회기 세부 정보 입력 창을 여는 함수
 def open_sessions(window, user_id=None):
+    settings = load_settings()
+
     session_window = tk.Toplevel(window)
     session_window.title("회기 세부 정보")
-    session_window.geometry("1000x600")  # 새 창 크기 설정
+    session_window.geometry(settings["sessions_window_size"])  # 새 창 크기 설정
     
     # 세션 데이터 저장할 딕셔너리
     session_data = {}
@@ -258,7 +298,6 @@ def open_sessions(window, user_id=None):
         add_entry_row(session_window, labels, session_data, 1, add_button, save_button, delete_button, session_window_widgets=session_window_widgets)
     
     # 메뉴바 생성
-    settings = load_settings()
     update_font_size(settings["sessions_font_size"], session_window_widgets, sessions_bar)
     create_menu(session_window, session_window_widgets, sessions_bar)
 
@@ -600,13 +639,19 @@ def save_user_data(values, user_id=None):
         messagebox.showerror("Error", f"오류가 발생했습니다: {e}")
 
 def open_create_user_window():
+    settings = load_settings()
+
     create_window = tk.Toplevel(root)
     create_window.title("신규 생성")
-    create_window.geometry("800x600")  # 새 창 크기 설정
+    create_window.geometry(settings["edit_window_size"])  # 새 창 크기 설정
 
     entries, special_entries, window_widgets = create_field_entries(create_window)
     window_widgets = grid_field_entries(entries, special_entries, create_window, window_widgets)
-
+    
+	# 새 창 열릴 때 Name 입력 필드에 포커스
+    entry_name = entries["이름"]
+    entry_name.focus_set()
+    
     def save_new_user():
         values = {
             label: (entry.get() if isinstance(entry, tk.Entry) else 
@@ -621,22 +666,23 @@ def open_create_user_window():
     button_save.grid(row=len(headers), column=20, padx=5, pady=5)
     
     # 메뉴바 생성
-    settings = load_settings()
     update_font_size(settings["edit_font_size"], window_widgets, edit_bar)
     create_menu(create_window, window_widgets, edit_bar)
 
 def open_update_window(user_id):
+    settings = load_settings()
+
     user_data = [row for row in sql.read_users() if str(row[0]) == user_id][0]
     update_window = tk.Toplevel(root)
     update_window.title("편집")
-    update_window.geometry("800x600")  # 새 창 크기 설정
+    update_window.geometry(settings["edit_window_size"])  # 새 창 크기 설정
 
     entries, special_entries, window_widgets = create_field_entries(update_window, user_id)
     window_widgets = grid_field_entries(entries, special_entries, update_window, window_widgets, user_id)
 
     # 기존 데이터로 필드 채우기
     populate_fields(entries, user_data)
-
+    
 	# 새 창 열릴 때 Name 입력 필드에 포커스
     entry_name = entries["이름"]
     entry_name.focus_set()
@@ -661,7 +707,6 @@ def open_update_window(user_id):
     window_widgets.append(button_save)
 
     # 메뉴바 생성
-    settings = load_settings()
     update_font_size(settings["edit_font_size"], window_widgets, edit_bar)
     create_menu(update_window, window_widgets, edit_bar)
 
@@ -788,19 +833,6 @@ def export_to_excel(user_id=None):
     
     df = pd.DataFrame(data, columns=columns_list)
     df.to_excel(file_name, index=False, engine='openpyxl')
-
-def save_settings(settings, filename="settings.json"):
-    with open(filename, "w") as f:
-        json.dump(settings, f)
-
-def load_settings(filename="settings.json"):
-    try:
-        with open(filename, "r") as f:
-            settings = json.load(f)
-    except FileNotFoundError:
-        # 기본 설정을 반환 (파일이 없을 경우)
-        settings = {"main_font_size": 100, "edit_font_size": 100, "sessions_font_size": 100}
-    return settings
 
 def on_closing():
     save_settings(settings)
