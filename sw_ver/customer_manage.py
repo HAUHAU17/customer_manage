@@ -101,7 +101,7 @@ def update_font_size(percent, all_widgets, bar_type=None):
     size = int(BASE_FONT_SIZE * percent / 100)
     global custom_font, settings
     custom_font = ("Arial", size)
-
+    
     # 적용할 위젯 리스트
     for widget in all_widgets:
         widget.config(font=custom_font)
@@ -199,8 +199,9 @@ def save_session_data(edit_window, session_window, session_data, user_id, user_d
     exist_row_num = len(user_data)
     print("last :", last_row_num, ", exist :", exist_row_num, ", user_data :", exist_row_num, user_data)
     if last_row_num < exist_row_num:
-        last_detail_id = user_data[exist_row_num-1][0]
-        sql.delete_session_detail(last_detail_id)
+        for i in range(last_row_num, exist_row_num):
+            last_detail_id = user_data[i][0]
+            sql.delete_session_detail(last_detail_id)
     
     for row_num, entries in session_data.items():
         session_number = row_num
