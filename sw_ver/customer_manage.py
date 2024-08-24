@@ -193,7 +193,15 @@ def convert_date_format(date_str, date_type):
         return date_str
 
 # 세션 저장 함수
-def save_session_data(edit_window, session_window, session_data, user_id):
+def save_session_data(edit_window, session_window, session_data, user_id, user_data):
+    # 데이터베이스에서 해당 세션 삭제
+    last_row_num = len(session_data)
+    exist_row_num = len(user_data)
+    print("last :", last_row_num, ", exist :", exist_row_num, ", user_data :", exist_row_num, user_data)
+    if last_row_num < exist_row_num:
+        last_detail_id = user_data[exist_row_num-1][0]
+        sql.delete_session_detail(last_detail_id)
+    
     for row_num, entries in session_data.items():
         session_number = row_num
         session_date = convert_date_format(entries[0], hyphen_type)
@@ -242,20 +250,16 @@ def add_entry_row(session_window, labels, session_data, row_num, add_button, sav
         session_window_widgets.extend([add_button, delete_button, save_button])
 
 # 입력 행 추가 함수
-def delete_entry_row(session_window, labels, session_data, add_button, save_button, delete_button, user_data):
+def delete_entry_row(session_window, labels, session_data, add_button, save_button, delete_button):
     if len(session_data) > 1:
         # 마지막 입력 행 삭제
         last_row_num = max(session_data.keys())
         for entry in session_data[last_row_num]:
             entry.destroy()
         
-        last_detail_id = user_data[last_row_num-1][0]
-        
-        # 데이터베이스에서 해당 세션 삭제
-        sql.delete_session_detail(last_detail_id)
         session_window.grid_slaves(row=last_row_num)[0].destroy()  # 회차 라벨 제거
         del session_data[last_row_num]
-
+        
         # '추가', '저장', '삭제' 버튼 위치 재조정
         add_button.grid(row=len(session_data) + 1, column=len(labels) + 1, padx=5, pady=5)
         delete_button.grid(row=len(session_data) + 1, column=len(labels) + 2, padx=5, pady=5)
@@ -284,8 +288,8 @@ def open_sessions(window, user_id=None):
 
     # 첫 번째 입력 행 추가
     add_button = tk.Button(session_window, text="행 추가", command=lambda: add_entry_row(session_window, labels, session_data, len(session_data) + 1, add_button, save_button, delete_button, session_window_widgets=session_window_widgets))
-    save_button = tk.Button(session_window, text="저장", command=lambda: save_session_data(window, session_window, {k: [e.get() for e in v] for k, v in session_data.items()}, user_id=user_id))
-    delete_button = tk.Button(session_window, text="행 삭제", command=lambda: delete_entry_row(session_window, labels, session_data, add_button, save_button, delete_button, user_data))
+    save_button = tk.Button(session_window, text="저장", command=lambda: save_session_data(window, session_window, {k: [e.get() for e in v] for k, v in session_data.items()}, user_id=user_id, user_data = user_data))
+    delete_button = tk.Button(session_window, text="행 삭제", command=lambda: delete_entry_row(session_window, labels, session_data, add_button, save_button, delete_button))
 
     #기존 데이터를 사용해 입력 행 추가
     if user_data:
