@@ -31,9 +31,10 @@ conn.commit()
 def load_customers(treeview_customers, get_customers, query=""):
     customers = get_customers(query)
     treeview_customers.delete(*treeview_customers.get_children())
-    
+
     for customer in customers:
         # Extract values from customer tuple, handle missing values
+        print(f"Customer data: {customer}")
         id = customer[0]
         name = customer[1]
         birth_year = customer[2] if customer[2] else "0000"
@@ -80,26 +81,39 @@ def delete_customer(customer_id):
     cursor.execute("DELETE FROM customers WHERE id=?", (customer_id,))
     conn.commit()
 
-def update_customer(customer_id, updated_name, updated_phone, updated_email, updated_address,
-                    updated_gender, updated_birth_year, updated_birth_month, updated_birth_day,
-                    updated_age, updated_session_start, updated_session_end,
-                    updated_presenting_problem, updated_session_count, updated_special_notes):
-    cursor.execute("""
-        UPDATE customers
-        SET name=?, birth_year=?, birth_month=?, birth_day=?, age=?, phone=?, email=?, address=?, gender=?, 
-            session_start_date=?, session_end_date=?, presenting_problem=?, session_count=?, special_notes=?
-        WHERE id=?
-    """, (updated_name, updated_birth_year, updated_birth_month, updated_birth_day, updated_age,
-        updated_phone, updated_email, updated_address, updated_gender,
-        updated_session_start, updated_session_end, updated_presenting_problem, 
-        updated_session_count, updated_special_notes, customer_id))
-    conn.commit()
+def update_customer(customer_id, updated_name, updated_birth_year, updated_birth_month, updated_birth_day,
+                    updated_age, updated_phone, updated_email, updated_address, updated_gender,
+                    updated_session_start, updated_session_end, updated_presenting_problem,
+                    updated_session_count, updated_special_notes):
+    try:
+        # 데이터베이스 연결
+        conn = sqlite3.connect('customer_management.db')
+        cursor = conn.cursor()
+
+        # 쿼리 실행
+        cursor.execute("""
+            UPDATE customers
+            SET name=?, birth_year=?, birth_month=?, birth_day=?, age=?, phone=?, email=?, address=?, gender=?,
+                session_start_date=?, session_end_date=?, presenting_problem=?, session_count=?, special_notes=?
+            WHERE id=?
+        """, (updated_name, updated_birth_year, updated_birth_month, updated_birth_day, updated_age,
+            updated_phone, updated_email, updated_address, updated_gender,
+            updated_session_start, updated_session_end, updated_presenting_problem,
+            updated_session_count, updated_special_notes, customer_id))
+        
+        # 변경 사항 커밋 및 연결 종료
+        conn.commit()
+        conn.close()
+
+    except sqlite3.Error as e:
+        raise Exception(f"Database error: {e}")
+
 
 
 def get_customer_by_id(customer_id):
     """주어진 ID로 고객 정보를 조회하는 함수입니다."""
     # 데이터베이스 연결 및 쿼리 실행
-    conn = sqlite3.connect('database.db')  # 데이터베이스 파일명을 적절히 변경하세요
+    conn = sqlite3.connect('customer_management.db')
     cursor = conn.cursor()
     
     cursor.execute("""
@@ -129,23 +143,24 @@ def show_all_customers():
     for customer in customers:
         print(customer)
 
+        
 def validate_birthdate(year, month, day):
     try:
         if not year and not month and not day:
             return True
         # 연도 검사
         birth_year = int(year)
-        if birth_year < 1950 or birth_year > 2050 or birth_year == '0000':
+        if birth_year < 1950 or birth_year > 2050:
             return False
 
         # 월 검사
         birth_month = int(month)
-        if birth_month < 1 or birth_month > 12 or birth_month == '00':
+        if birth_month < 1 or birth_month > 12:
             return False
 
         # 일 검사 (월별로 일수 체크)
         birth_day = int(day)
-        if birth_day < 1 or birth_day > 31 or birth_day == '00':
+        if birth_day < 1 or birth_day > 31:
             return False
         if birth_month in [4, 6, 9, 11] and birth_day > 30:  # 30일까지만 있는 달
             return False
@@ -160,6 +175,7 @@ def validate_birthdate(year, month, day):
         return True
     except ValueError:
         return False
+
     
 
 def close_connection():
