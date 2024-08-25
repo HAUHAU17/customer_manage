@@ -934,6 +934,11 @@ treeview_users.bind("<Double-1>", on_user_select)
 # 시작 시 사용자 목록 읽기
 read_users_gui()
 
+# 스크롤바 추가
+scrollbar = tk.Scrollbar(root, orient="vertical", command=treeview_users.yview)
+scrollbar.grid(row=2, column=5, sticky="ns")
+treeview_users.configure(yscrollcommand=scrollbar.set)
+
 # config 저장
 root.protocol("WM_DELETE_WINDOW", on_closing)
 
