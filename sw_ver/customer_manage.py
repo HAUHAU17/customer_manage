@@ -72,8 +72,10 @@ gender_var = tk.StringVar()
 main_bar = 1
 edit_bar = 2
 sessions_bar = 3
+updated_row = 1
 
 def update_window_size(root, percent, bar_type=None):
+    global updated_row
     if bar_type == main_bar:
         style = ttk.Style()
         style.configure("Treeview", font=custom_font)
@@ -87,8 +89,28 @@ def update_window_size(root, percent, bar_type=None):
         windw_name = "edit_window_size"
 
     elif bar_type == sessions_bar:
-        text_width = 10 * percent
-        text_height = 6 * percent
+        if percent == 140:
+            text_width = 10 * percent + 50
+        else:
+            text_width = 10 * percent
+        if percent == 100:
+            offset = 18
+        elif percent ==110:
+            offset = 19
+        elif percent ==120:
+            offset = 20
+        elif percent ==130:
+            offset = 21
+        elif percent ==140:
+            offset = 22
+        else:
+            offset = 23
+
+        if updated_row  >= offset:
+            text_height = 6 * percent + ((updated_row - (offset-1)) * 30)
+        else:
+            text_height = 6 * percent
+        
         windw_name = "sessions_window_size"
     
     window_size = f"{text_width}x{text_height}"
@@ -120,7 +142,7 @@ def update_font_size(percent, all_widgets, bar_type=None):
     
     save_settings(settings)
 
-def set_font_size(root, percent, all_widgets, var, bar_type):
+def set_font_size(root, percent, all_widgets, bar_type):
     update_font_size(percent, all_widgets, bar_type)
     update_window_size(root, percent, bar_type)
 
@@ -147,7 +169,7 @@ def create_menu(root, all_widgets, bar_type):
         var = tk.IntVar(value=settings.get("sessions_font_size", 100))
     
     for percent in percent_buttons:
-        font_menu.add_radiobutton(label=f"{percent}%", variable=var, value=percent, command=lambda p=percent: set_font_size(root, p, all_widgets, var, bar_type))
+        font_menu.add_radiobutton(label=f"{percent}%", variable=var, value=percent, command=lambda p=percent: set_font_size(root, p, all_widgets, bar_type))
 
 def update_age(year, month, day):
     today = datetime.today()
@@ -217,7 +239,8 @@ def save_session_data(edit_window, session_window, session_data, user_id, user_d
 
 def add_entry_row(session_window, labels, session_data, row_num, add_button, save_button, delete_button, preset_data=None, session_window_widgets=None):
     entries = []
-    
+    global updated_row
+
     # '회차' 라벨 추가
     label = tk.Label(session_window, text=f"{row_num}회기")
     label.grid(row=row_num, column=0, padx=10, pady=5)
@@ -251,10 +274,14 @@ def add_entry_row(session_window, labels, session_data, row_num, add_button, sav
     if session_window_widgets is not None:
         session_window_widgets.extend([add_button, delete_button, save_button])
     
+    updated_row = row_num + 2
     update_font_size(settings["sessions_font_size"], session_window_widgets, sessions_bar)
+    update_window_size(session_window, settings["sessions_font_size"], sessions_bar)
 
 # 입력 행 추가 함수
 def delete_entry_row(session_window, labels, session_data, add_button, save_button, delete_button, session_window_widgets):
+    global updated_row
+
     if len(session_data) > 1:
         # 마지막 입력 행 삭제
         last_row_num = max(session_data.keys())
@@ -272,6 +299,9 @@ def delete_entry_row(session_window, labels, session_data, add_button, save_butt
         add_button.grid(row=len(session_data) + 1, column=len(labels) + 1, padx=5, pady=5)
         delete_button.grid(row=len(session_data) + 1, column=len(labels) + 2, padx=5, pady=5)
         save_button.grid(row=len(session_data) + 1, column=len(labels) + 3, padx=5, pady=10)
+        
+        updated_row = len(session_data) + 2
+        update_window_size(session_window, settings["sessions_font_size"], sessions_bar)
 
 # 회기 세부 정보 입력 창을 여는 함수
 def open_sessions(window, user_id=None):
