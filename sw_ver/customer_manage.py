@@ -74,7 +74,30 @@ edit_bar = 2
 sessions_bar = 3
 updated_row = 1
 
-def update_window_size(root, percent, bar_type=None):
+def add_scrollbar_to_window(root):
+    # Canvas와 Scrollbar를 생성합니다.
+    canvas = tk.Canvas(root)
+    canvas.grid(row=0, column=0, sticky="nsew")
+    
+    v_scrollbar = tk.Scrollbar(root, orient="vertical", command=canvas.yview)
+    v_scrollbar.grid(row=0, column=1, sticky="ns")
+
+    h_scrollbar = tk.Scrollbar(root, orient="horizontal", command=canvas.xview)
+    h_scrollbar.grid(row=1, column=0, sticky="ew")
+    
+    scrollable_frame = tk.Frame(canvas)
+
+    canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+    canvas.configure(yscrollcommand=v_scrollbar.set, xscrollcommand=h_scrollbar.set)
+
+    scrollable_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+
+    root.grid_rowconfigure(0, weight=1)
+    root.grid_columnconfigure(0, weight=1)
+
+    return scrollable_frame
+
+def update_window_size(percent, bar_type=None):
     global updated_row
     if bar_type == main_bar:
         style = ttk.Style()
@@ -89,34 +112,35 @@ def update_window_size(root, percent, bar_type=None):
         windw_name = "edit_window_size"
 
     elif bar_type == sessions_bar:
-        if percent == 140:
-            text_width = 10 * percent + 50
-        else:
-            text_width = 10 * percent
         if percent == 100:
-            offset = 18
+            x_offset = 10
+            y_offset = 18
         elif percent ==110:
-            offset = 19
+            x_offset = 20
+            y_offset = 19
         elif percent ==120:
-            offset = 20
+            x_offset = 30
+            y_offset = 20
         elif percent ==130:
-            offset = 21
+            x_offset = -40
+            y_offset = 21
         elif percent ==140:
-            offset = 22
+            x_offset = 50
+            y_offset = 22
         else:
-            offset = 23
+            x_offset = -20
+            y_offset = 23
 
-        if updated_row  >= offset:
-            text_height = 6 * percent + ((updated_row - (offset-1)) * 30)
+        text_width = 10 * percent + x_offset
+        if updated_row  >= y_offset:
+            text_height = 6 * percent + ((updated_row - (y_offset-1)) * 30)
         else:
             text_height = 6 * percent
         
         windw_name = "sessions_window_size"
     
     window_size = f"{text_width}x{text_height}"
-    root.geometry(window_size)
     settings[windw_name] = window_size
-    
     save_settings(settings)
 
 def update_font_size(percent, all_widgets, bar_type=None):
@@ -142,9 +166,9 @@ def update_font_size(percent, all_widgets, bar_type=None):
     
     save_settings(settings)
 
-def set_font_size(root, percent, all_widgets, bar_type):
+def set_font_size(percent, all_widgets, bar_type):
     update_font_size(percent, all_widgets, bar_type)
-    update_window_size(root, percent, bar_type)
+    update_window_size(percent, bar_type)
 
 def create_menu(root, all_widgets, bar_type):
     global font_menu, percent_buttons, var
@@ -169,7 +193,7 @@ def create_menu(root, all_widgets, bar_type):
         var = tk.IntVar(value=settings.get("sessions_font_size", 100))
     
     for percent in percent_buttons:
-        font_menu.add_radiobutton(label=f"{percent}%", variable=var, value=percent, command=lambda p=percent: set_font_size(root, p, all_widgets, bar_type))
+        font_menu.add_radiobutton(label=f"{percent}%", variable=var, value=percent, command=lambda p=percent: set_font_size(p, all_widgets, bar_type))
 
 def update_age(year, month, day):
     today = datetime.today()
@@ -276,7 +300,7 @@ def add_entry_row(session_window, labels, session_data, row_num, add_button, sav
     
     updated_row = row_num + 2
     update_font_size(settings["sessions_font_size"], session_window_widgets, sessions_bar)
-    update_window_size(session_window, settings["sessions_font_size"], sessions_bar)
+    update_window_size(settings["sessions_font_size"], sessions_bar)
 
 # 입력 행 추가 함수
 def delete_entry_row(session_window, labels, session_data, add_button, save_button, delete_button, session_window_widgets):
@@ -301,7 +325,7 @@ def delete_entry_row(session_window, labels, session_data, add_button, save_butt
         save_button.grid(row=len(session_data) + 1, column=len(labels) + 3, padx=5, pady=10)
         
         updated_row = len(session_data) + 2
-        update_window_size(session_window, settings["sessions_font_size"], sessions_bar)
+        update_window_size(settings["sessions_font_size"], sessions_bar)
 
 # 회기 세부 정보 입력 창을 여는 함수
 def open_sessions(window, user_id=None):
@@ -311,6 +335,9 @@ def open_sessions(window, user_id=None):
     session_window.title("회기 세부 정보")
     session_window.geometry(settings["sessions_window_size"])  # 새 창 크기 설정
     
+    # 스크롤 가능한 Frame 생성
+    scrollable_frame = add_scrollbar_to_window(session_window)
+    
     # 세션 데이터 저장할 딕셔너리
     session_data = {}
     session_window_widgets = []
@@ -318,16 +345,16 @@ def open_sessions(window, user_id=None):
     # 테이블 헤더 생성
     labels = ["회기", "날짜", "상담내용"]
     for i, label_text in enumerate(labels):
-        label = tk.Label(session_window, text=label_text)
+        label = tk.Label(scrollable_frame , text=label_text)
         label.grid(row=0, column=i, padx=10, pady=5)
         session_window_widgets.append(label)
     
     user_data =sql.get_session_details_by_user(user_id)
 
     # 첫 번째 입력 행 추가
-    add_button = tk.Button(session_window, text="행 추가", command=lambda: add_entry_row(session_window, labels, session_data, len(session_data) + 1, add_button, save_button, delete_button, session_window_widgets=session_window_widgets))
-    save_button = tk.Button(session_window, text="저장", command=lambda: save_session_data(window, session_window, {k: [e.get() for e in v] for k, v in session_data.items()}, user_id=user_id, user_data = user_data))
-    delete_button = tk.Button(session_window, text="행 삭제", command=lambda: delete_entry_row(session_window, labels, session_data, add_button, save_button, delete_button, session_window_widgets=session_window_widgets))
+    add_button = tk.Button(scrollable_frame , text="행 추가", command=lambda: add_entry_row(scrollable_frame , labels, session_data, len(session_data) + 1, add_button, save_button, delete_button, session_window_widgets=session_window_widgets))
+    save_button = tk.Button(scrollable_frame , text="저장", command=lambda: save_session_data(window, session_window , {k: [e.get() for e in v] for k, v in session_data.items()}, user_id=user_id, user_data = user_data))
+    delete_button = tk.Button(scrollable_frame , text="행 삭제", command=lambda: delete_entry_row(scrollable_frame , labels, session_data, add_button, save_button, delete_button, session_window_widgets=session_window_widgets))
 
     #기존 데이터를 사용해 입력 행 추가
     if user_data:
@@ -335,9 +362,9 @@ def open_sessions(window, user_id=None):
             session_number = session[1]
             session_date = convert_date_format(session[2], slash_type)
             details = session[3]
-            add_entry_row(session_window, labels, session_data, session_number, add_button, save_button, delete_button, preset_data=[session_date, details], session_window_widgets=session_window_widgets)
+            add_entry_row(scrollable_frame , labels, session_data, session_number, add_button, save_button, delete_button, preset_data=[session_date, details], session_window_widgets=session_window_widgets)
     else:
-        add_entry_row(session_window, labels, session_data, 1, add_button, save_button, delete_button, session_window_widgets=session_window_widgets)
+        add_entry_row(scrollable_frame , labels, session_data, 1, add_button, save_button, delete_button, session_window_widgets=session_window_widgets)
     
     # 메뉴바 생성
     update_font_size(settings["sessions_font_size"], session_window_widgets, sessions_bar)
