@@ -860,15 +860,24 @@ def on_user_select(event=None):
 
 def delete_user_gui():
     selected_item = treeview_users.selection()
+    
     if selected_item:
-        user_id = selected_item[0]
-        user_data = treeview_users.item(selected_item, 'values')
-        user_name = user_data[0]
-        
-        confirm = messagebox.askyesno("리스트 삭제", f"'{user_name}'을 삭제하시겠습니까?")
+        user_names = []
+        user_ids = []
+        for item in selected_item:
+            user_data = treeview_users.item(item, 'values')
+            user_name = user_data[1]
+            user_id = item  # user_id를 item에서 추출
+
+            user_names.append(user_name)
+            user_ids.append(user_id)
+
+        # 선택된 모든 유저를 한 번에 삭제할지 확인
+        confirm = messagebox.askyesno("리스트 삭제", f"{', '.join(user_names)}을 삭제하시겠습니까?")
         
         if confirm:
-            sql.delete_user(user_id)
+            for user_id in user_ids:
+                sql.delete_user(user_id)
             messagebox.showinfo("삭제 완료", "리스트가 삭제되었습니다.")
             read_users_gui()
     else:
