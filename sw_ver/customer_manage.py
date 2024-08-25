@@ -5,6 +5,8 @@ from tkcalendar import DateEntry
 import sql  # sql.py 파일을 import
 from datetime import datetime
 import pandas as pd
+from openpyxl import Workbook
+from openpyxl.styles import Alignment
 import json
 
 def save_settings(settings, filename="settings.json"):
@@ -899,6 +901,9 @@ def export_to_excel(user_id=None):
         data = sql.fetch_users()  # 데이터베이스에서 고객 데이터 가져오기
         file_name = "고객_목록.xlsx"
         columns_list = viewonly_headers
+        
+        df = pd.DataFrame(data, columns=columns_list)
+        df.to_excel(file_name, index=False, engine='openpyxl')
         messagebox.showinfo("정보", "고객 목록 엑셀 파일로 내보내졌습니다.")
     else:
         user_data = sql.fetch_users_by_id(user_id)  # 데이터베이스에서 고객 데이터 가져오기
@@ -913,16 +918,123 @@ def export_to_excel(user_id=None):
             # 중첩된 튜플을 리스트로 풀어줌
             flattened_data = [item for sublist in combined_data for item in (sublist if isinstance(sublist, tuple) else [sublist])]
             data.append(flattened_data)
-        
+    
         file_name = user_name + "_정보.xlsx"
 
         columns_list = export_headers + export_detail_headers
         
+        print(data)
+        print(export_headers)
+        print(export_detail_headers)
+        
+        # 엑셀 파일 생성
+        wb = Workbook()
+        ws = wb.active
+        ws.title = f"{user_name}님 정보"
+        
+        # 첫 번째 행: 고객정보
+        ws.merge_cells('A1:J1')
+        ws['A1'] = "고객정보"
+        ws['A1'].alignment = Alignment(horizontal='center')
+
+        # 두 번째 행: 이름, 상담시작/종료일
+        ws.merge_cells('B2:D2')
+        ws.merge_cells('F2:G2')
+        ws.merge_cells('I2:J2')
+        ws['A2'] = export_headers[1]
+        ws['A2'].alignment = Alignment(horizontal='center')
+        ws['B2'] = data[0][1]
+        ws['B2'].alignment = Alignment(horizontal='center')
+        ws['E2'] = export_headers[8]
+        ws['E2'].alignment = Alignment(horizontal='center')
+        ws['F2'] = data[0][8]
+        ws['F2'].alignment = Alignment(horizontal='center')
+        ws['H2'] = export_headers[9]
+        ws['H2'].alignment = Alignment(horizontal='center')
+        ws['I2'] = data[0][9]
+        ws['I2'].alignment = Alignment(horizontal='center')
+
+        # 세 번째 행: 성별, 나이, 생년월일
+        ws.merge_cells('F3:G3')
+        ws['A3'] = export_headers[5]
+        ws['A3'].alignment = Alignment(horizontal='center')
+        ws['B3'] = data[0][5]
+        ws['B3'].alignment = Alignment(horizontal='center')
+        ws['C3'] = export_headers[3]
+        ws['C3'].alignment = Alignment(horizontal='center')
+        ws['D3'] = data[0][3]
+        ws['D3'].alignment = Alignment(horizontal='center')
+        ws['E3'] = export_headers[2]
+        ws['E3'].alignment = Alignment(horizontal='center')
+        ws['F3'] = data[0][2]
+        ws['F3'].alignment = Alignment(horizontal='center')
+
+        # 네 번째 행: 연락처, 메일
+        ws.merge_cells('B4:D4')
+        ws.merge_cells('F4:J4')
+        ws['A4'] = export_headers[6]
+        ws['A4'].alignment = Alignment(horizontal='center')
+        ws['B4'] = data[0][6]
+        ws['B4'].alignment = Alignment(horizontal='center')
+        ws['E4'] = export_headers[4]
+        ws['E4'].alignment = Alignment(horizontal='center')
+        ws['F4'] = data[0][4]
+        ws['F4'].alignment = Alignment(horizontal='left')
+        
+        # 다섯 번째 행: 주소
+        ws.merge_cells('B5:J5')
+        ws['A5'] = export_headers[7]
+        ws['A5'].alignment = Alignment(horizontal='center')
+        ws['B5'] = data[0][7]
+        ws['B5'].alignment = Alignment(horizontal='left')
+
+        # 여섯 번째 행: 회기수, 호소문제
+        ws.merge_cells('D6:J6')
+        ws['A6'] = export_headers[11]
+        ws['A6'].alignment = Alignment(horizontal='center')
+        ws['B6'] = data[0][11]
+        ws['B6'].alignment = Alignment(horizontal='center')
+        ws['C6'] = export_headers[10]
+        ws['C6'].alignment = Alignment(horizontal='center')
+        ws['D6'] = data[0][10]
+        ws['D6'].alignment = Alignment(horizontal='left')
+        
+        # 일곱, 여덟 번째 행: 특이사항
+        ws.merge_cells('A7:J7')
+        ws.merge_cells('A8:J18')
+        ws['A7'] = export_headers[12]
+        ws['A7'].alignment = Alignment(horizontal='center')
+        ws['A8'] = data[0][12]
+
+        # 열아홉, 스물 번째 행: 세션 정보 헤더
+        ws.merge_cells('A19:J19')
+        ws.merge_cells('B20:C20')
+        ws.merge_cells('D20:J20')
+        ws['A19'] = "상세"
+        ws['A19'].alignment = Alignment(horizontal='center')
+        ws['A20'] = export_detail_headers[0]
+        ws['A20'].alignment = Alignment(horizontal='left')
+        ws['B20'] = export_detail_headers[1]
+        ws['B20'].alignment = Alignment(horizontal='center')
+        ws['D20'] = export_detail_headers[2]
+        ws['D20'].alignment = Alignment(horizontal='left')
+
+        # 열 번째 행부터: 세션 데이터 입력
+        for idx, session in enumerate(session_details, start=21):
+            ws.merge_cells(f'B{idx}:C{idx}')
+            ws.merge_cells(f'D{idx}:J{idx}')
+            ws[f'A{idx}'] = session[0]  # 회차 번호
+            ws[f'A{idx}'].alignment = Alignment(horizontal='center')
+            ws[f'B{idx}'] = session[1]  # 날짜
+            ws[f'B{idx}'].alignment = Alignment(horizontal='center')
+            ws[f'D{idx}'] = session[2]  # 내용
+            ws[f'D{idx}'].alignment = Alignment(horizontal='left')
+
+        # 파일 이름 설정
+        file_name = f"{user_name}_정보.xlsx"
+        wb.save(file_name)
         messagebox.showinfo("정보", user_name + "님 정보가 엑셀 파일로 내보내졌습니다.")
     
-    df = pd.DataFrame(data, columns=columns_list)
-    df.to_excel(file_name, index=False, engine='openpyxl')
-
 def on_closing():
     save_settings(settings)
     root.destroy()
