@@ -74,6 +74,14 @@ edit_bar = 2
 sessions_bar = 3
 updated_row = 1
 
+def on_mouse_wheel(event, canvas, scrollable_frame):
+    # 마우스 휠의 이동 방향에 따라 스크롤을 조정합니다.
+    if scrollable_frame.winfo_containing(event.x_root, event.y_root) == scrollable_frame:
+        if event.delta > 0:  # 위로 스크롤
+            canvas.yview_scroll(-1, "units")
+        else:  # 아래로 스크롤
+            canvas.yview_scroll(1, "units")
+
 def add_scrollbar_to_window(root):
     # Canvas와 Scrollbar를 생성합니다.
     canvas = tk.Canvas(root)
@@ -91,6 +99,9 @@ def add_scrollbar_to_window(root):
     canvas.configure(yscrollcommand=v_scrollbar.set, xscrollcommand=h_scrollbar.set)
 
     scrollable_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+
+    # 전체 윈도우에서 마우스 휠 스크롤을 감지하도록 설정
+    root.bind_all("<MouseWheel>", lambda e, c=canvas, sw=scrollable_frame: on_mouse_wheel(e, c, sw))
 
     root.grid_rowconfigure(0, weight=1)
     root.grid_columnconfigure(0, weight=1)
