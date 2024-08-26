@@ -31,7 +31,7 @@ root.geometry(settings["main_window_size"])  # 메인 창 초기 크기 설정
 
 # 기본 폰트 크기
 BASE_FONT_SIZE = 10
-custom_font = ("Arial", BASE_FONT_SIZE)
+custom_font = ("맑은 고딕", BASE_FONT_SIZE)
 
 # Treeview 설정
 headers = [
@@ -160,7 +160,7 @@ def update_window_size(percent, bar_type=None):
 def update_font_size(percent, all_widgets, bar_type=None):
     size = int(BASE_FONT_SIZE * percent / 100)
     global custom_font, settings
-    custom_font = ("Arial", size)
+    custom_font = ("맑은 고딕", size)
     
     # 적용할 위젯 리스트
     for widget in all_widgets:
