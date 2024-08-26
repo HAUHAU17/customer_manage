@@ -1005,6 +1005,7 @@ def export_to_excel(user_id=None):
         ws['A5'] = "주 소"
         ws['A5'].alignment = Alignment(horizontal='center')
         ws['A5'].font = Font(bold=True)
+        ws['A5'].fill = light_gray_fill
         ws['B5'] = data[0][7]
         ws['B5'].alignment = Alignment(horizontal='left')
 
@@ -1100,7 +1101,7 @@ def export_to_excel(user_id=None):
                 elif cell.row == 7 or cell.row == 19:
                     cell.border = Border(top=Side(style='medium'), bottom=Side(style='medium'))
                 elif cell.row == max_row:
-                    cell.border = Border(bottom=Side(style='medium'))
+                    cell.border = Border(left=Side(style='thin'),bottom=Side(style='medium'))
                 else:
                     cell.border = thin_border
         
