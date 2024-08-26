@@ -33,33 +33,33 @@ def create_customer_window(customer_id, treeview_customers):
 
     # Create labels and entries for each piece of information
     tk.Label(window, text="이름:").grid(row=0, column=0, padx=10, pady=5, sticky="w")
-    entry_name_edit = tk.Entry(window)
-    entry_name_edit.grid(row=0, column=1, padx=10, pady=5, sticky="ew", columnspan = 1)
+    entry_name_edit = tk.Entry(window, width=3)
+    entry_name_edit.grid(row=0, column=1, padx=10, pady=5, sticky="ew", columnspan = 2)
     entry_name_edit.insert(0, name)
 
     tk.Label(window, text="전화번호:").grid(row=1, column=0, padx=10, pady=5, sticky="w")
     phone_str = str(phone)  # Ensure phone is a string
     phone_parts = phone_str.split('-') if phone_str else ['', '', '']
-    entry_phone1_edit = tk.Entry(window, width=5)
-    entry_phone1_edit.grid(row=1, column=1, padx=10, pady=5)
+    entry_phone1_edit = tk.Entry(window, width=3)
+    entry_phone1_edit.grid(row=1, column=1, padx=0, pady=5)
     entry_phone1_edit.insert(0, phone_parts[0])
-    tk.Label(window, text="-").grid(row=1, column=2, padx=0, pady=5)
+    tk.Label(window, text="-", width=1).grid(row=1, column=2, padx=0, pady=5, sticky="ew")
     entry_phone2_edit = tk.Entry(window, width=5)
     entry_phone2_edit.grid(row=1, column=3, padx=0, pady=5)
     entry_phone2_edit.insert(0, phone_parts[1])
-    tk.Label(window, text="-").grid(row=1, column=4, padx=0, pady=5)
+    tk.Label(window, text="-", width=1).grid(row=1, column=4, padx=0, pady=5, sticky="ew")
     entry_phone3_edit = tk.Entry(window, width=5)
     entry_phone3_edit.grid(row=1, column=5, padx=0, pady=5)
     entry_phone3_edit.insert(0, phone_parts[2])
 
     tk.Label(window, text="이메일:").grid(row=2, column=0, padx=10, pady=5, sticky="w")
-    entry_email_edit = tk.Entry(window)
-    entry_email_edit.grid(row=2, column=1, padx=10, pady=5, sticky="ew")
+    entry_email_edit = tk.Entry(window, width=3)
+    entry_email_edit.grid(row=2, column=1, padx=0, pady=5, sticky="ew", columnspan = 4)
     entry_email_edit.insert(0, email)
 
     tk.Label(window, text="주소:").grid(row=3, column=0, padx=10, pady=5, sticky="w")
-    entry_address_edit = tk.Entry(window)
-    entry_address_edit.grid(row=3, column=1, padx=10, pady=5, sticky="ew")
+    entry_address_edit = tk.Entry(window, width=3)
+    entry_address_edit.grid(row=3, column=1, padx=0, pady=5, sticky="ew", columnspan = 4)
     entry_address_edit.insert(0, address)
 
  
@@ -70,28 +70,28 @@ def create_customer_window(customer_id, treeview_customers):
     gender_var = tk.StringVar(value=gender)  # Initialize StringVar with the gender value from database
 
     # 성별 버튼 배치
-    gender_male_rb = tk.Radiobutton(window, text="남", variable=gender_var, value='남')
-    gender_female_rb = tk.Radiobutton(window, text="여", variable=gender_var, value='여')
-    gender_male_rb.grid(row=0, column=3, padx=10, pady=5, sticky="w")
-    gender_female_rb.grid(row=0, column=4, padx=10, pady=5, sticky="w")
+    gender_male_rb = tk.Radiobutton(window, text="남", variable=gender_var, value='남', width=3)
+    gender_female_rb = tk.Radiobutton(window, text="여", variable=gender_var, value='여', width=3)
+    gender_male_rb.grid(row=0, column=4, padx=10, pady=5, sticky="w")
+    gender_female_rb.grid(row=0, column=5, padx=10, pady=5, sticky="w")
 
     tk.Label(window, text="생년월일:").grid(row=5, column=0, padx=10, pady=5, sticky="w")
     entry_birth_year = tk.Entry(window, width=5)
-    entry_birth_year.grid(row=5, column=1, padx=10, pady=5)
+    entry_birth_year.grid(row=5, column=1, padx=0, pady=5)
     entry_birth_year.insert(0, str(birth_year))
-    tk.Label(window, text="년").grid(row=5, column=2, padx=1, pady=5, sticky="w")
+    tk.Label(window, text="년", width=1).grid(row=5, column=2, padx=1, pady=5, sticky="w")
     entry_birth_month = tk.Entry(window, width=3)
-    entry_birth_month.grid(row=5, column=3, padx=10, pady=5)
+    entry_birth_month.grid(row=5, column=3, padx=0, pady=5)
     entry_birth_month.insert(0, str(birth_month))
-    tk.Label(window, text="월").grid(row=5, column=4, padx=1, pady=5, sticky="w")
+    tk.Label(window, text="월", width=1).grid(row=5, column=4, padx=1, pady=5, sticky="w")
     entry_birth_day = tk.Entry(window, width=3)
-    entry_birth_day.grid(row=5, column=5, padx=10, pady=5)
+    entry_birth_day.grid(row=5, column=5, padx=0, pady=5)
     entry_birth_day.insert(0, str(birth_day))
-    tk.Label(window, text="일").grid(row=5, column=6, padx=1, pady=5, sticky="w")
+    tk.Label(window, text="일", width=1).grid(row=5, column=6, padx=1, pady=5, sticky="w")
 
     tk.Label(window, text="나이:").grid(row=5, column=7, padx=10, pady=5, sticky="w")
-    entry_age_edit = tk.Entry(window)
-    entry_age_edit.grid(row=5, column=8, padx=10, pady=5, sticky="ew")
+    entry_age_edit = tk.Entry(window, width=3)
+    entry_age_edit.grid(row=5, column=8, padx=0, pady=5, sticky="ew")
     entry_age_edit.insert(0, age)
     entry_age_edit.config(state='disabled')  # 나이 필드 비활성화
 
@@ -119,46 +119,75 @@ def create_customer_window(customer_id, treeview_customers):
     entry_birth_day.bind("<KeyRelease>", update_age)
 
     
-    session_start_str = str(session_start_date)  # Ensure phone is a string
-    session_start_part = session_start_str.split('-') if session_start_str else ['', '', '']
 
-
+    session_start_part = session_start_date.split('-') if session_start_date else ['', '', '']
     tk.Label(window, text="상담 시작일:").grid(row=6, column=0, padx=10, pady=5, sticky="w")
     entry_session_start_year = tk.Entry(window, width=5)
-    entry_session_start_year.grid(row=6, column=1, padx=10, pady=5)
+    entry_session_start_year.grid(row=6, column=1, padx=0, pady=5)
     entry_session_start_year.insert(0, str(session_start_part[0]))
-    tk.Label(window, text="년").grid(row=6, column=2, padx=1, pady=5, sticky="w")
+    tk.Label(window, text="년", width=1).grid(row=6, column=2, padx=1, pady=5, sticky="w")
     entry_session_start_month = tk.Entry(window, width=3)
-    entry_session_start_month.grid(row=6, column=3, padx=10, pady=5)
+    entry_session_start_month.grid(row=6, column=3, padx=0, pady=5)
     entry_session_start_month.insert(0, str(session_start_part[1]))
-    tk.Label(window, text="월").grid(row=6, column=4, padx=1, pady=5, sticky="w")
+    tk.Label(window, text="월", width=1).grid(row=6, column=4, padx=1, pady=5, sticky="w")
     entry_session_start_day = tk.Entry(window, width=3)
-    entry_session_start_day.grid(row=6, column=6, padx=10, pady=5)
+    entry_session_start_day.grid(row=6, column=5, padx=0, pady=5)
     entry_session_start_day.insert(0, str(session_start_part[2]))
-    tk.Label(window, text="일").grid(row=6, column=6, padx=1, pady=5, sticky="w")
-    entry_session_start = f"{entry_session_start_year}-{entry_session_start_month}-{birentry_session_start_dayth_day}"
+    tk.Label(window, text="일", width=1).grid(row=6, column=6, padx=1, pady=5, sticky="w")
 
-    tk.Label(window, text="상담 종료일:").grid(row=6, column=2, padx=10, pady=5, sticky="w")
-    entry_session_end = DateEntry(window, date_pattern='yyyy-mm-dd')
-    entry_session_end.grid(row=6, column=3, padx=10, pady=5, sticky="ew")
-    entry_session_end.set_date(datetime.strptime(session_end_date, '%Y-%m-%d') if session_end_date else datetime.today())
+    # 여기에서 session_start_date를 최종적으로 구성
+    session_start_date = f"{entry_session_start_year}-{entry_session_start_month}-{entry_session_start_day}" if entry_session_start_year and entry_session_start_month and entry_session_start_day else ''
 
-    tk.Label(window, text="호소 문제:").grid(row=7, column=0, padx=10, pady=5, sticky="nw")
-    entry_presenting_problem = tk.Text(window, height=4)
-    entry_presenting_problem.grid(row=7, column=1, padx=10, pady=5, sticky="ew", columnspan=4)
+
+    session_end_str = str(session_end_date) 
+    session_end_part = session_end_str.split('-') if session_end_str else ['', '', '']
+    tk.Label(window, text="상담 종료일:").grid(row=7, column=0, padx=10, pady=5, sticky="w")
+    entry_session_end_year = tk.Entry(window, width=5)
+    entry_session_end_year.grid(row=7, column=1, padx=0, pady=5)
+    entry_session_end_year.insert(0, str(session_end_part[0]))
+    tk.Label(window, text="년", width=1).grid(row=7, column=2, padx=1, pady=5, sticky="w")
+    entry_session_end_month = tk.Entry(window, width=3)
+    entry_session_end_month.grid(row=7, column=3, padx=0, pady=5)
+    entry_session_end_month.insert(0, str(session_end_part[1]))
+    tk.Label(window, text="월", width=1).grid(row=7, column=4, padx=1, pady=5, sticky="w")
+    entry_session_end_day = tk.Entry(window, width=3)
+    entry_session_end_day.grid(row=7, column=5, padx=0, pady=5)
+    entry_session_end_day.insert(0, str(session_end_part[2]))
+    tk.Label(window, text="일", width=1).grid(row=7, column=6, padx=1, pady=5, sticky="w")
+    entry_session_end = f"{entry_session_end_year}-{entry_session_end_month}-{entry_session_end_day}"
+
+    tk.Label(window, text="호소 문제:").grid(row=8, column=0, padx=10, pady=5, sticky="nw")
+    entry_presenting_problem = tk.Text(window, height=4, width=5)
+    entry_presenting_problem.grid(row=8, column=1, padx=0, pady=5, sticky="ew", columnspan=8)
     entry_presenting_problem.insert("1.0", presenting_problem if presenting_problem else "")
+    # Text widget for special notes
+    entry_special_notes = tk.Text(entry_presenting_problem, height=4, width=40)
+    entry_special_notes.pack(side="left", fill="both", expand=True)
+    # Scrollbar for the Text widget
+    scrollbar_special_notes = tk.Scrollbar(entry_presenting_problem, command=entry_presenting_problem.yview)
+    scrollbar_special_notes.pack(side="right", fill="y")
+    # Link scrollbar to Text widget
+    entry_special_notes.config(yscrollcommand=scrollbar_special_notes.set)
 
-    tk.Label(window, text="회기수:").grid(row=8, column=0, padx=10, pady=5, sticky="w")
-    entry_session_count = tk.Entry(window)
-    entry_session_count.grid(row=8, column=1, padx=10, pady=5, sticky="ew")
+    tk.Label(window, text="회기수:").grid(row=9, column=0, padx=10, pady=5, sticky="w")
+    entry_session_count = tk.Entry(window, width=3)
+    entry_session_count.grid(row=9, column=1, padx=0, pady=5, sticky="ew")
     entry_session_count.insert(0, session_count if session_count else "")
+    tk.Label(window, text="회").grid(row=9, column=2, padx=0, pady=5, sticky="w")
 
-    tk.Label(window, text="특이사항:").grid(row=9, column=0, padx=10, pady=5, sticky="nw")
-    entry_special_notes = tk.Text(window, height=4)
-    entry_special_notes.grid(row=9, column=1, padx=10, pady=5, sticky="ew", columnspan=4)
+    tk.Label(window, text="특이사항:").grid(row=10, column=0, padx=10, pady=5, sticky="nw")
+    entry_special_notes = tk.Text(window, height=4, width=5)
+    entry_special_notes.grid(row=10, column=1, padx=0, pady=5, sticky="ew", columnspan=8)
     entry_special_notes.insert("1.0", special_notes if special_notes else "")
+    # Text widget for special notes
+    entry_special_notes = tk.Text(entry_special_notes, height=4, width=40)
+    entry_special_notes.pack(side="left", fill="both", expand=True)
+    # Scrollbar for the Text widget
+    scrollbar_special_notes = tk.Scrollbar(entry_special_notes, command=entry_special_notes.yview)
+    scrollbar_special_notes.pack(side="right", fill="y")
+    # Link scrollbar to Text widget
+    entry_special_notes.config(yscrollcommand=scrollbar_special_notes.set)
 
-    
     # Add save button
     def save_customer():
         name = entry_name_edit.get().strip()
@@ -179,7 +208,7 @@ def create_customer_window(customer_id, treeview_customers):
         email = entry_email_edit.get().strip() or ''
         address = entry_address_edit.get().strip() or ''
         gender = gender_var.get().strip() or ''
-        session_start_date = entry_session_start.get().strip() or ''
+        session_start_date = session_start_date.get().strip() or ''
         session_end_date = entry_session_end.get_date().strftime('%Y-%m-%d') if entry_session_end.get_date() else ''
         session_count = entry_session_count.get().strip() or ''
         presenting_problem = entry_presenting_problem.get("1.0", tk.END).strip() or ''

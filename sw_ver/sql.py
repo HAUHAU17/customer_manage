@@ -1,7 +1,7 @@
 import sqlite3
 
 # 데이터베이스 연결
-conn = sqlite3.connect('users.db')
+conn = sqlite3.connect('customer_management.db')
 c = conn.cursor()
 
 def create_table():
