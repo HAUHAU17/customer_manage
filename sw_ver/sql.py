@@ -89,7 +89,7 @@ def fetch_session_details_by_user(user_id, columns):
     """특정 사용자의 세션 세부 정보를 가져오는 함수"""
     
     field_map = {
-        '회기' : 'session_number',
+        '회차' : 'session_number',
         '날짜' :'session_date',
         '상담내용' : 'details'
     }

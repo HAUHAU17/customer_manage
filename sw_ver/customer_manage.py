@@ -6,7 +6,8 @@ import sql  # sql.py 파일을 import
 from datetime import datetime
 import pandas as pd
 from openpyxl import Workbook
-from openpyxl.styles import Alignment
+from openpyxl.styles import Alignment, Font, Border, Side, PatternFill
+from openpyxl.utils import get_column_letter
 import json
 
 def save_settings(settings, filename="settings.json"):
@@ -43,7 +44,7 @@ export_headers = [
     "ID", "이름", "생년월일", "나이", "메일", "성별", "전화번호", "주소", "상담시작일", "상담종료일", "호소문제", "회기 수", "특이사항"
 ]
 export_detail_headers = [
-    "회기", "날짜", "상담내용"
+    "회차", "날짜", "상담내용"
 ]
 
 treeview_users = ttk.Treeview(root, columns=viewonly_headers, show='headings')
@@ -356,7 +357,7 @@ def open_sessions(window, user_id=None):
     session_window_widgets = []
 
     # 테이블 헤더 생성
-    labels = ["회기", "날짜", "상담내용"]
+    labels = ["회차", "날짜", "상담내용"]
     for i, label_text in enumerate(labels):
         label = tk.Label(scrollable_frame , text=label_text)
         label.grid(row=0, column=i, padx=10, pady=5)
@@ -923,101 +924,135 @@ def export_to_excel(user_id=None):
 
         columns_list = export_headers + export_detail_headers
         
-        print(data)
-        print(export_headers)
-        print(export_detail_headers)
-        
         # 엑셀 파일 생성
         wb = Workbook()
         ws = wb.active
         ws.title = f"{user_name}님 정보"
         
+        # 황갈색 색상 채우기
+        light_gray_fill = PatternFill(start_color="E5E5E5", end_color="E5E5E5", fill_type="solid")
+
         # 첫 번째 행: 고객정보
         ws.merge_cells('A1:J1')
-        ws['A1'] = "고객정보"
+        ws['A1'] = "고 객 정 보"
         ws['A1'].alignment = Alignment(horizontal='center')
+        ws['A1'].font = Font(bold=True, size=16)
+        ws['A1'].fill = light_gray_fill
 
-        # 두 번째 행: 이름, 상담시작/종료일
+        # 두 번째 행: 이름, 상담 시작일, 상담 종료일
         ws.merge_cells('B2:D2')
         ws.merge_cells('F2:G2')
         ws.merge_cells('I2:J2')
-        ws['A2'] = export_headers[1]
+        ws['A2'] = "이 름"
         ws['A2'].alignment = Alignment(horizontal='center')
+        ws['A2'].font = Font(bold=True)
+        ws['A2'].fill = light_gray_fill
         ws['B2'] = data[0][1]
         ws['B2'].alignment = Alignment(horizontal='center')
-        ws['E2'] = export_headers[8]
+        ws['E2'] = "상담 시작일"
         ws['E2'].alignment = Alignment(horizontal='center')
+        ws['E2'].font = Font(bold=True)
+        ws['E2'].fill = light_gray_fill
         ws['F2'] = data[0][8]
         ws['F2'].alignment = Alignment(horizontal='center')
-        ws['H2'] = export_headers[9]
+        ws['H2'] = "상담 종료일"
         ws['H2'].alignment = Alignment(horizontal='center')
+        ws['H2'].font = Font(bold=True)
+        ws['H2'].fill = light_gray_fill
         ws['I2'] = data[0][9]
         ws['I2'].alignment = Alignment(horizontal='center')
 
         # 세 번째 행: 성별, 나이, 생년월일
         ws.merge_cells('F3:G3')
-        ws['A3'] = export_headers[5]
+        ws.merge_cells('H3:J3')
+        ws['A3'] = "성 별"
         ws['A3'].alignment = Alignment(horizontal='center')
+        ws['A3'].font = Font(bold=True)
+        ws['A3'].fill = light_gray_fill
         ws['B3'] = data[0][5]
         ws['B3'].alignment = Alignment(horizontal='center')
-        ws['C3'] = export_headers[3]
+        ws['C3'] = "나 이"
         ws['C3'].alignment = Alignment(horizontal='center')
+        ws['C3'].font = Font(bold=True)
+        ws['C3'].fill = light_gray_fill
         ws['D3'] = data[0][3]
         ws['D3'].alignment = Alignment(horizontal='center')
-        ws['E3'] = export_headers[2]
+        ws['E3'] = "생년월일"
         ws['E3'].alignment = Alignment(horizontal='center')
+        ws['E3'].font = Font(bold=True)
+        ws['E3'].fill = light_gray_fill
         ws['F3'] = data[0][2]
         ws['F3'].alignment = Alignment(horizontal='center')
 
         # 네 번째 행: 연락처, 메일
         ws.merge_cells('B4:D4')
         ws.merge_cells('F4:J4')
-        ws['A4'] = export_headers[6]
+        ws['A4'] = "연 락 처"
         ws['A4'].alignment = Alignment(horizontal='center')
+        ws['A4'].font = Font(bold=True)
+        ws['A4'].fill = light_gray_fill
         ws['B4'] = data[0][6]
         ws['B4'].alignment = Alignment(horizontal='center')
-        ws['E4'] = export_headers[4]
+        ws['E4'] = "메 일"
         ws['E4'].alignment = Alignment(horizontal='center')
+        ws['E4'].font = Font(bold=True)
+        ws['E4'].fill = light_gray_fill
         ws['F4'] = data[0][4]
         ws['F4'].alignment = Alignment(horizontal='left')
         
         # 다섯 번째 행: 주소
         ws.merge_cells('B5:J5')
-        ws['A5'] = export_headers[7]
+        ws['A5'] = "주 소"
         ws['A5'].alignment = Alignment(horizontal='center')
+        ws['A5'].font = Font(bold=True)
         ws['B5'] = data[0][7]
         ws['B5'].alignment = Alignment(horizontal='left')
 
         # 여섯 번째 행: 회기수, 호소문제
         ws.merge_cells('D6:J6')
-        ws['A6'] = export_headers[11]
+        ws['A6'] = "회기 수"
         ws['A6'].alignment = Alignment(horizontal='center')
+        ws['A6'].font = Font(bold=True)
+        ws['A6'].fill = light_gray_fill
         ws['B6'] = data[0][11]
         ws['B6'].alignment = Alignment(horizontal='center')
-        ws['C6'] = export_headers[10]
+        ws['C6'] = "호소 문제"
         ws['C6'].alignment = Alignment(horizontal='center')
+        ws['C6'].font = Font(bold=True)
+        ws['C6'].fill = light_gray_fill
         ws['D6'] = data[0][10]
         ws['D6'].alignment = Alignment(horizontal='left')
         
         # 일곱, 여덟 번째 행: 특이사항
         ws.merge_cells('A7:J7')
         ws.merge_cells('A8:J18')
-        ws['A7'] = export_headers[12]
+        ws['A7'] = "특 이 사 항"
         ws['A7'].alignment = Alignment(horizontal='center')
+        ws['A7'].font = Font(bold=True, size=13)
+        ws['A7'].fill = light_gray_fill
         ws['A8'] = data[0][12]
+        ws['A8'].alignment = Alignment(horizontal='left', vertical='top')
 
         # 열아홉, 스물 번째 행: 세션 정보 헤더
         ws.merge_cells('A19:J19')
         ws.merge_cells('B20:C20')
         ws.merge_cells('D20:J20')
-        ws['A19'] = "상세"
+        ws['A19'] = "상 세"
         ws['A19'].alignment = Alignment(horizontal='center')
-        ws['A20'] = export_detail_headers[0]
-        ws['A20'].alignment = Alignment(horizontal='left')
-        ws['B20'] = export_detail_headers[1]
+        ws['A19'].font = Font(bold=True, size=13)
+        ws['A19'].fill = light_gray_fill
+        ws['A20'] = "회 차"
+        ws['A20'].alignment = Alignment(horizontal='center')
+        ws['A20'].font = Font(bold=True)
+        ws['A20'].fill = light_gray_fill
+        ws['B20'] = "날 짜"
         ws['B20'].alignment = Alignment(horizontal='center')
-        ws['D20'] = export_detail_headers[2]
-        ws['D20'].alignment = Alignment(horizontal='left')
+        ws['B20'].font = Font(bold=True)
+        ws['B20'].fill = light_gray_fill
+        ws['D20'] = "상담 내용"
+        ws['D20'].alignment = Alignment(horizontal='center')
+        ws['D20'].font = Font(bold=True)
+        ws['D20'].fill = light_gray_fill
 
         # 열 번째 행부터: 세션 데이터 입력
         for idx, session in enumerate(session_details, start=21):
@@ -1029,6 +1064,62 @@ def export_to_excel(user_id=None):
             ws[f'B{idx}'].alignment = Alignment(horizontal='center')
             ws[f'D{idx}'] = session[2]  # 내용
             ws[f'D{idx}'].alignment = Alignment(horizontal='left')
+            max_row = idx
+        
+        # 테두리 스타일 설정
+        thin_border = Border(
+            left=Side(style='thin'),
+            right=Side(style='thin'),
+            top=Side(style='thin'),
+            bottom=Side(style='thin')
+        )
+        
+        # 고객 정보 테이블 셀에 테두리 적용
+        for row in ws.iter_rows(min_row=1, max_row=max_row, min_col=1, max_col=10):
+            for cell in row:
+                if cell.column == 1:
+                    if cell.row == 1:
+                        cell.border = Border(left=Side(style='medium'), top=Side(style='medium'), bottom=Side(style='medium'))
+                    elif cell.row == max_row:
+                        cell.border = Border(left=Side(style='medium'), bottom=Side(style='medium'))
+                    elif cell.row == 7 or cell.row == 19:
+                        cell.border = Border(left=Side(style='medium'), top=Side(style='medium'), bottom=Side(style='medium'))
+                    else:
+                        cell.border = Border(left=Side(style='medium'), bottom=Side(style='thin'))
+                elif cell.column == 10:
+                    if cell.row == 1:
+                        cell.border = Border(right=Side(style='medium'),top=Side(style='medium'), bottom=Side(style='medium'))
+                    elif cell.row == max_row:
+                        cell.border = Border(right=Side(style='medium'), bottom=Side(style='medium'))
+                    elif cell.row == 7 or cell.row == 19:
+                        cell.border = Border(right=Side(style='medium'), top=Side(style='medium'), bottom=Side(style='medium'))
+                    else:
+                        cell.border = Border(right=Side(style='medium'), bottom=Side(style='thin'))
+                elif cell.row == 1:
+                    cell.border = Border(top=Side(style='medium'), bottom=Side(style='medium'))
+                elif cell.row == 7 or cell.row == 19:
+                    cell.border = Border(top=Side(style='medium'), bottom=Side(style='medium'))
+                elif cell.row == max_row:
+                    cell.border = Border(bottom=Side(style='medium'))
+                else:
+                    cell.border = thin_border
+        
+        # 셀 너비 조정 함수
+        def auto_adjust_column_width(ws, min_width=12):
+            for col_index, col in enumerate(ws.columns, start=1):
+                max_length = 0
+                column_letter = get_column_letter(col_index)  # 열 인덱스에서 열 레터 얻기
+                for cell in col:
+                    try:
+                        if cell.value:
+                            max_length = max(max_length, len(str(cell.value)))
+                    except:
+                        pass
+                adjusted_width = (max_length + 4)  # Add a little extra space
+                ws.column_dimensions[column_letter].width = max(adjusted_width, min_width)
+
+        # 자동 셀 너비 조정
+        auto_adjust_column_width(ws)
 
         # 파일 이름 설정
         file_name = f"{user_name}_정보.xlsx"
