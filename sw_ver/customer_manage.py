@@ -25,7 +25,7 @@ def load_settings(filename="settings.json"):
 
 # GUI 애플리케이션 생성
 root = tk.Tk()
-root.title("고객 관리 프로그램")
+root.title("김경희 심리상담 센터")
 settings = load_settings()
 root.geometry(settings["main_window_size"])  # 메인 창 초기 크기 설정
 
