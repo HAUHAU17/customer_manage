@@ -913,13 +913,13 @@ def export_to_excel(user_id=None):
         # 세션 세부 정보 가져오기
         session_details = sql.fetch_session_details_by_user(user_id, export_detail_headers)
         
-        data = []
+        data = list(user_data)
         for session in session_details:
-            combined_data = list(user_data) + list(session)
+            combined_data = data + list(session)
             # 중첩된 튜플을 리스트로 풀어줌
             flattened_data = [item for sublist in combined_data for item in (sublist if isinstance(sublist, tuple) else [sublist])]
             data.append(flattened_data)
-    
+        
         file_name = user_name + "_정보.xlsx"
 
         columns_list = export_headers + export_detail_headers
@@ -938,7 +938,7 @@ def export_to_excel(user_id=None):
         ws['A1'].alignment = Alignment(horizontal='center')
         ws['A1'].font = Font(bold=True, size=16)
         ws['A1'].fill = light_gray_fill
-
+        
         # 두 번째 행: 이름, 상담 시작일, 상담 종료일
         ws.merge_cells('B2:D2')
         ws.merge_cells('F2:G2')
@@ -1054,7 +1054,8 @@ def export_to_excel(user_id=None):
         ws['D20'].alignment = Alignment(horizontal='center')
         ws['D20'].font = Font(bold=True)
         ws['D20'].fill = light_gray_fill
-
+        
+        max_row = 20
         # 열 번째 행부터: 세션 데이터 입력
         for idx, session in enumerate(session_details, start=21):
             ws.merge_cells(f'B{idx}:C{idx}')
