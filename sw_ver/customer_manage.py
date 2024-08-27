@@ -9,6 +9,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font, Border, Side, PatternFill
 from openpyxl.utils import get_column_letter
 import json
+import os
 
 def save_settings(settings, filename="settings.json"):
     with open(filename, "w") as f:
@@ -183,6 +184,52 @@ def update_font_size(percent, all_widgets, bar_type=None):
 def set_font_size(percent, all_widgets, bar_type):
     update_font_size(percent, all_widgets, bar_type)
     update_window_size(percent, bar_type)
+
+def copy_text(entry):
+    try:
+        # 선택된 텍스트를 클립보드에 복사
+        selected_text = entry.selection_get()
+        entry.clipboard_clear()
+        entry.clipboard_append(selected_text)
+    except tk.TclError:
+        pass  # 선택된 텍스트가 없는 경우 예외 처리
+
+def paste_text(entry):
+    try:
+        # 클립보드의 내용을 Entry에 붙여넣기
+        entry.insert(tk.INSERT, entry.clipboard_get())
+    except tk.TclError:
+        pass  # 클립보드에 텍스트가 없는 경우 예외 처리
+
+def show_context_menu(event):
+    # 우클릭한 위젯이 Entry인지 확인
+    entry = event.widget
+
+    # 컨텍스트 메뉴(우클릭 메뉴) 생성
+    context_menu = tk.Menu(root, tearoff=0)
+    
+    # 복사 명령 추가
+    context_menu.add_command(label="복사 (Ctrl + C)", command=lambda: copy_text(entry))
+    
+    # 클립보드에 내용이 있는지 확인
+    clipboard_content = entry.clipboard_get()
+    
+    # 붙여넣기 명령 추가 (클립보드에 내용이 있을 때만 활성화)
+    if clipboard_content:
+        context_menu.add_command(label="붙여넣기 (Ctrl + V)", command=lambda: paste_text(entry))
+    
+    # 복사된 내용이 없는 경우 "붙여넣기" 비활성화
+    else:
+        context_menu.add_command(label="붙여넣기 (Ctrl + V)", state=tk.DISABLED)
+    
+    # 복사 옵션도 텍스트가 선택되지 않은 경우 비활성화
+    try:
+        selected_text = entry.selection_get()
+    except tk.TclError:
+        context_menu.entryconfig("복사 (Ctrl + C)", state=tk.DISABLED)
+    
+    # 우클릭한 위치에 컨텍스트 메뉴 표시
+    context_menu.tk_popup(event.x_root, event.y_root)
 
 def create_menu(root, all_widgets, bar_type):
     global font_menu, percent_buttons, var
@@ -474,7 +521,7 @@ def create_field_entries(window, user_id=None):
         
         labels_and_fields[header] = entry
         window_widgets.append(entry)
-    
+
     return labels_and_fields, special_entries, window_widgets
 
 def grid_field_entries(labels_and_fields, special_entries, window, window_widgets, user_id=None):
@@ -903,8 +950,18 @@ def export_to_excel(user_id=None):
         file_name = "고객_목록.xlsx"
         columns_list = viewonly_headers
         
+        # 상대경로에 저장할 폴더 경로 지정 (예: "output_folder")
+        folder_path = os.path.join('.', '고객리스트')
+
+        # 폴더가 없으면 생성
+        if not os.path.exists(folder_path):
+            os.makedirs(folder_path)
+        
+        # 파일 경로 설정
+        file_path = os.path.join(folder_path, file_name)
+
         df = pd.DataFrame(data, columns=columns_list)
-        df.to_excel(file_name, index=False, engine='openpyxl')
+        df.to_excel(file_path, index=False, engine='openpyxl')
         messagebox.showinfo("정보", "고객 목록 엑셀 파일로 내보내졌습니다.")
     else:
         user_data = sql.fetch_users_by_id(user_id)  # 데이터베이스에서 고객 데이터 가져오기
@@ -920,8 +977,6 @@ def export_to_excel(user_id=None):
             flattened_data = [item for sublist in combined_data for item in (sublist if isinstance(sublist, tuple) else [sublist])]
             data.append(flattened_data)
         
-        file_name = user_name + "_정보.xlsx"
-
         columns_list = export_headers + export_detail_headers
         
         # 엑셀 파일 생성
@@ -933,7 +988,7 @@ def export_to_excel(user_id=None):
         light_gray_fill = PatternFill(start_color="E5E5E5", end_color="E5E5E5", fill_type="solid")
 
         # 첫 번째 행: 고객정보
-        ws.merge_cells('A1:J1')
+        ws.merge_cells('A1:H1')
         ws['A1'] = "고 객 정 보"
         ws['A1'].alignment = Alignment(horizontal='center')
         ws['A1'].font = Font(bold=True, size=16)
@@ -941,8 +996,6 @@ def export_to_excel(user_id=None):
         
         # 두 번째 행: 이름, 상담 시작일, 상담 종료일
         ws.merge_cells('B2:D2')
-        ws.merge_cells('F2:G2')
-        ws.merge_cells('I2:J2')
         ws['A2'] = "이 름"
         ws['A2'].alignment = Alignment(horizontal='center')
         ws['A2'].font = Font(bold=True)
@@ -955,16 +1008,14 @@ def export_to_excel(user_id=None):
         ws['E2'].fill = light_gray_fill
         ws['F2'] = data[0][8]
         ws['F2'].alignment = Alignment(horizontal='center')
-        ws['H2'] = "상담 종료일"
+        ws['G2'] = "상담 종료일"
+        ws['G2'].alignment = Alignment(horizontal='center')
+        ws['G2'].font = Font(bold=True)
+        ws['G2'].fill = light_gray_fill
+        ws['H2'] = data[0][9]
         ws['H2'].alignment = Alignment(horizontal='center')
-        ws['H2'].font = Font(bold=True)
-        ws['H2'].fill = light_gray_fill
-        ws['I2'] = data[0][9]
-        ws['I2'].alignment = Alignment(horizontal='center')
 
         # 세 번째 행: 성별, 나이, 생년월일
-        ws.merge_cells('F3:G3')
-        ws.merge_cells('H3:J3')
         ws['A3'] = "성 별"
         ws['A3'].alignment = Alignment(horizontal='center')
         ws['A3'].font = Font(bold=True)
@@ -986,7 +1037,7 @@ def export_to_excel(user_id=None):
 
         # 네 번째 행: 연락처, 메일
         ws.merge_cells('B4:D4')
-        ws.merge_cells('F4:J4')
+        ws.merge_cells('F4:H4')
         ws['A4'] = "연 락 처"
         ws['A4'].alignment = Alignment(horizontal='center')
         ws['A4'].font = Font(bold=True)
@@ -1001,7 +1052,7 @@ def export_to_excel(user_id=None):
         ws['F4'].alignment = Alignment(horizontal='left')
         
         # 다섯 번째 행: 주소
-        ws.merge_cells('B5:J5')
+        ws.merge_cells('B5:H5')
         ws['A5'] = "주 소"
         ws['A5'].alignment = Alignment(horizontal='center')
         ws['A5'].font = Font(bold=True)
@@ -1010,34 +1061,35 @@ def export_to_excel(user_id=None):
         ws['B5'].alignment = Alignment(horizontal='left')
 
         # 여섯 번째 행: 회기수, 호소문제
-        ws.merge_cells('D6:J6')
+        ws.merge_cells('D6:H6')
         ws['A6'] = "회기 수"
-        ws['A6'].alignment = Alignment(horizontal='center')
+        ws['A6'].alignment = Alignment(horizontal='center', vertical='center')
         ws['A6'].font = Font(bold=True)
         ws['A6'].fill = light_gray_fill
         ws['B6'] = data[0][11]
-        ws['B6'].alignment = Alignment(horizontal='center')
+        ws['B6'].alignment = Alignment(horizontal='center', vertical='center')
         ws['C6'] = "호소 문제"
-        ws['C6'].alignment = Alignment(horizontal='center')
+        ws['C6'].alignment = Alignment(horizontal='center', vertical='center')
         ws['C6'].font = Font(bold=True)
         ws['C6'].fill = light_gray_fill
         ws['D6'] = data[0][10]
-        ws['D6'].alignment = Alignment(horizontal='left')
+        ws['D6'].alignment = Alignment(horizontal='left', vertical='top', wrap_text=True)
+        ws.row_dimensions[6].height = 50
         
         # 일곱, 여덟 번째 행: 특이사항
-        ws.merge_cells('A7:J7')
-        ws.merge_cells('A8:J18')
+        ws.merge_cells('A7:H7')
+        ws.merge_cells('A8:H18')
         ws['A7'] = "특 이 사 항"
         ws['A7'].alignment = Alignment(horizontal='center')
         ws['A7'].font = Font(bold=True, size=13)
         ws['A7'].fill = light_gray_fill
         ws['A8'] = data[0][12]
-        ws['A8'].alignment = Alignment(horizontal='left', vertical='top')
+        ws['A8'].alignment = Alignment(horizontal='left', vertical='top', wrap_text=True)
 
         # 열아홉, 스물 번째 행: 세션 정보 헤더
-        ws.merge_cells('A19:J19')
+        ws.merge_cells('A19:H19')
         ws.merge_cells('B20:C20')
-        ws.merge_cells('D20:J20')
+        ws.merge_cells('D20:H20')
         ws['A19'] = "상 세"
         ws['A19'].alignment = Alignment(horizontal='center')
         ws['A19'].font = Font(bold=True, size=13)
@@ -1059,13 +1111,16 @@ def export_to_excel(user_id=None):
         # 열 번째 행부터: 세션 데이터 입력
         for idx, session in enumerate(session_details, start=21):
             ws.merge_cells(f'B{idx}:C{idx}')
-            ws.merge_cells(f'D{idx}:J{idx}')
+            ws.merge_cells(f'D{idx}:H{idx}')
             ws[f'A{idx}'] = session[0]  # 회차 번호
-            ws[f'A{idx}'].alignment = Alignment(horizontal='center')
+            ws[f'A{idx}'].alignment = Alignment(horizontal='center', vertical='center')
             ws[f'B{idx}'] = session[1]  # 날짜
-            ws[f'B{idx}'].alignment = Alignment(horizontal='center')
+            ws[f'B{idx}'].alignment = Alignment(horizontal='center', vertical='center')
             ws[f'D{idx}'] = session[2]  # 내용
-            ws[f'D{idx}'].alignment = Alignment(horizontal='left')
+            ws[f'D{idx}'].alignment = Alignment(horizontal='left', vertical='top', wrap_text=True)
+
+            ws.row_dimensions[idx].height = 50
+
             max_row = idx
         
         # 테두리 스타일 설정
@@ -1077,7 +1132,7 @@ def export_to_excel(user_id=None):
         )
         
         # 고객 정보 테이블 셀에 테두리 적용
-        for row in ws.iter_rows(min_row=1, max_row=max_row, min_col=1, max_col=10):
+        for row in ws.iter_rows(min_row=1, max_row=max_row, min_col=1, max_col=8):
             for cell in row:
                 if cell.column == 1:
                     if cell.row == 1:
@@ -1088,7 +1143,7 @@ def export_to_excel(user_id=None):
                         cell.border = Border(left=Side(style='medium'), top=Side(style='medium'), bottom=Side(style='medium'))
                     else:
                         cell.border = Border(left=Side(style='medium'), bottom=Side(style='thin'))
-                elif cell.column == 10:
+                elif cell.column == 8:
                     if cell.row == 1:
                         cell.border = Border(right=Side(style='medium'),top=Side(style='medium'), bottom=Side(style='medium'))
                     elif cell.row == max_row:
@@ -1106,26 +1161,31 @@ def export_to_excel(user_id=None):
                 else:
                     cell.border = thin_border
         
+        columns_widths = [9, 5, 10, 5, 12, 13, 11, 12, 13, 11]
+
         # 셀 너비 조정 함수
         def auto_adjust_column_width(ws, min_width=12):
             for col_index, col in enumerate(ws.columns, start=1):
-                max_length = 0
                 column_letter = get_column_letter(col_index)  # 열 인덱스에서 열 레터 얻기
-                for cell in col:
-                    try:
-                        if cell.value:
-                            max_length = max(max_length, len(str(cell.value)))
-                    except:
-                        pass
-                adjusted_width = (max_length + 4)  # Add a little extra space
-                ws.column_dimensions[column_letter].width = max(adjusted_width, min_width)
+                ws.column_dimensions[column_letter].width = columns_widths[col_index-1]
 
         # 자동 셀 너비 조정
         auto_adjust_column_width(ws)
-
+        
         # 파일 이름 설정
         file_name = f"{user_name}_정보.xlsx"
-        wb.save(file_name)
+
+        # 상대경로에 저장할 폴더 경로 지정 (예: "output_folder")
+        folder_path = os.path.join('.', '고객리스트')
+
+        # 폴더가 없으면 생성
+        if not os.path.exists(folder_path):
+            os.makedirs(folder_path)
+        
+        # 파일 경로 설정
+        file_path = os.path.join(folder_path, file_name)
+        
+        wb.save(file_path)
         messagebox.showinfo("정보", user_name + "님 정보가 엑셀 파일로 내보내졌습니다.")
     
 def on_closing():
@@ -1190,6 +1250,10 @@ read_users_gui()
 scrollbar = tk.Scrollbar(root, orient="vertical", command=treeview_users.yview)
 scrollbar.grid(row=2, column=5, sticky="ns")
 treeview_users.configure(yscrollcommand=scrollbar.set)
+
+# 모든 Entry 위젯에 대해 우클릭 이벤트 바인딩
+root.bind_class("Entry", "<Button-3>", show_context_menu)
+root.bind_class("Text", "<Button-3>", show_context_menu)
 
 # config 저장
 root.protocol("WM_DELETE_WINDOW", on_closing)
