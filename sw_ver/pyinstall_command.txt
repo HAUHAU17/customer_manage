@@ -1,0 +1,6 @@
+pyinstaller --onefile --collect-all babel --icon=customer_management.ico --name 김경희심리상담센터 -w customer_manage.py
+
+--onefile : 한 파일로 생성
+--name : 실행파일 이름 변경
+--icon : 실행파일 아이콘 변경
+-w 옵션 : 콘솔창 안뜨게 하기
